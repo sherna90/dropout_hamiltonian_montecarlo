@@ -44,7 +44,7 @@ def iterate_minibatches(X, y, batchsize):
         excerpt = slice(start_idx, start_idx + batchsize)
         yield X[excerpt], y[excerpt]
 
-def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,verbose=True):
+def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,transform=True,verbose=True):
     loss_val=np.zeros((np.int(epochs)))
     momemtum={'weights':np.zeros((par['weights'].shape)),'bias':np.zeros((par['bias'].shape))}
     gamma=0.99
@@ -53,6 +53,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,verbo
             X_batch, y_batch = batch
             if scale:
                 X_batch=X_batch/255.
+            if transform:
                 y_batch=one_hot(y_batch,num_classes)
             grad_p=grad(X_batch,y_batch,par)
             momemtum['weights'] = gamma * momemtum['weights'] + eta * grad_p['weights']
