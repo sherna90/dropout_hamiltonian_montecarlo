@@ -1,1 +1,1 @@
-# Dropout Hamiltonian Montecarlo
+# Hamiltonian Montecarlo
