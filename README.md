@@ -1,5 +1,5 @@
 # hamiltonian_montecarlo
-Repository for Hamiltonian Monte Carlo
+Repository for Hamiltonian Monte Carlo for Deep Neural Networks (Work in progress!)
 
 Dependencies : 
 
