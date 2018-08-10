@@ -51,7 +51,7 @@ def one_hot(y,num_classes):
 
 def cross_entropy(y_hat, y):
     prod = misc.multiply(y,cumath.log(y_hat+1e-6))
-    return -misc.sum(prod)/y.shape[0]
+    return misc.sum(prod)/y.shape[0]
 
 def softmax(y_linear_gpu):
     softmax_kernel = gpu_kernel.get_function("softmax")
@@ -84,8 +84,7 @@ def grad(X_gpu,y_gpu,par_gpu):
 def loss(X_gpu, y_gpu, par_gpu):
     y_hat=net(X_gpu,par_gpu)
     log_like=cross_entropy(y_hat,y_gpu)
-    dim=par_gpu['weights'].shape[0]
-    return log_like.get()+(0.5/dim)*par_gpu['alpha']*np.sum(np.square(par_gpu['weights'].get()))
+    return -log_like.get()
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -93,11 +92,12 @@ def iterate_minibatches(X, y, batchsize):
         excerpt = slice(start_idx, start_idx + batchsize)
         yield X[excerpt], y[excerpt]
 
-def sgd(X, y, num_classes,par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,verbose=True):
+def sgd(X, y, num_classes,par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,transform=True,verbose=True):
     loss_val=np.zeros((np.int(epochs)))
     par_gpu={'weights':gpuarray.to_gpu(par['weights'].astype(np.float32).copy()),
         'bias':gpuarray.to_gpu(par['bias'].astype(np.float32).copy()),
         'alpha':np.float32(par['alpha']).copy()}
+    dim=par_gpu['weights'].shape[0]
     momemtum={'weights':misc.zeros((par['weights'].shape),dtype=np.float32),
         'bias':misc.zeros((par['bias'].shape),dtype=np.float32)}
     gamma=0.9
@@ -106,7 +106,8 @@ def sgd(X, y, num_classes,par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,verbo
             X_batch, y_batch = batch
             if scale:
                 X_batch=X_batch/255.
-                y_batch=one_hot(y_batch,num_classes)
+            if transform:
+                y_batch=one_hot(y_batch,num_classes) 
             X_batch_gpu = gpuarray.to_gpu(X_batch.astype(np.float32).copy())
             y_batch_gpu = gpuarray.to_gpu(y_batch.astype(np.float32).copy())
             grad_p=grad(X_batch_gpu,y_batch_gpu,par_gpu)
@@ -122,7 +123,7 @@ def sgd(X, y, num_classes,par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,verbo
         if verbose:
             print('loss: {0:.4f}'.format(loss(X_batch_gpu,y_batch_gpu,par_gpu)) )
             #print('par',par_gpu['bias'],par_gpu['weights'])
-        loss_val[i]=loss(X_batch_gpu,y_batch_gpu,par_gpu)
+        loss_val[i]=loss(X_batch_gpu,y_batch_gpu,par_gpu)+(0.5/dim)*par_gpu['alpha']*np.sum(np.square(par_gpu['weights'].get()))
     par['weights']=par_gpu['weights'].get()
     par['bias']=par_gpu['bias'].get()
     return par,loss_val

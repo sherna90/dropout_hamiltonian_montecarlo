@@ -10,7 +10,7 @@ def one_hot(y,num_classes):
     return encoding
 
 def cross_entropy(y_hat, y):
-    return -np.sum(y * np.log(y_hat+1e-6))/y.shape[0]
+    return np.sum(y * np.log(y_hat+1e-6))/y.shape[0]
 
 def softmax(y_linear):
     exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
@@ -35,8 +35,7 @@ def grad(X,y,par):
     
 def loss(X, y, par):
     y_hat=net(X,par)
-    dim=par['weights'].shape[0]
-    return cross_entropy(y_hat,y)+(0.5/dim)*par['alpha']*np.sum(np.square(par['weights']))
+    return -cross_entropy(y_hat,y)
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -46,6 +45,7 @@ def iterate_minibatches(X, y, batchsize):
 
 def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,transform=True,verbose=True):
     loss_val=np.zeros((np.int(epochs)))
+    dim=par['weights'].shape[0]
     momemtum={'weights':np.zeros((par['weights'].shape)),'bias':np.zeros((par['bias'].shape))}
     gamma=0.99
     for i in range(np.int(epochs)):
@@ -61,7 +61,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
             momemtum['bias'] = gamma * momemtum['bias'] + eta * grad_p['bias']    
             par['bias']-=momemtum['bias']
             #print 'norm gradient: ',np.linalg.norm(par['weights'])
-        loss_val[i]=loss(X_batch,y_batch,par)
+        loss_val[i]=loss(X_batch,y_batch,par)+(0.5/dim)*par['alpha']*np.sum(np.square(par['weights']))
         #eta *= (1. / (1. + decay * epochs))
         if verbose:
             print('loss: {0:.4f}'.format(loss(X_batch,y_batch,par)) )
