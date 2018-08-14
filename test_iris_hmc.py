@@ -13,6 +13,8 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
+import hamiltonian.hmc as hmc
+
 epochs = 100
 eta=1e-2
 batch_size=10
@@ -29,8 +31,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 D=X_train.shape[1]
 num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),'bias':np.random.randn(num_classes),'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=True,verbose=1)
-y_pred=softmax.predict(X_test,par,False)
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
-print par
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p, step_size=1, n_steps=3,scale=False,transform=True,verbose=1)
+mcmc.sample(1e4)
+print mcmc.state

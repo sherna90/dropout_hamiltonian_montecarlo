@@ -16,7 +16,7 @@ else:
 eta=1e-2
 epochs=20
 batch_size=256
-alpha=1e-3
+alpha=1e-2
 data_path = 'data/'
 
 mnist_train=h5py.File('data/mnist_train.h5','r')
@@ -43,3 +43,4 @@ print(classification_report(y_test[:], y_pred))
 print(confusion_matrix(y_test[:], y_pred))
 mnist_test.close()
 mnist_train.close()
+
