@@ -2,12 +2,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import numpy as np
-
-def one_hot(y,num_classes):
-    encoding=np.zeros((len(y),num_classes))
-    for i, val in enumerate(y):
-        encoding[i, np.int(val)] = 1.0
-    return encoding
+from utils import *
 
 def cross_entropy(y_hat, y):
     return np.sum(y * np.log(y_hat+1e-6))/y.shape[0]
@@ -35,7 +30,8 @@ def grad(X,y,par):
     
 def loss(X, y, par):
     y_hat=net(X,par)
-    return -cross_entropy(y_hat,y)
+    dim=par['weights'].shape[0]
+    return -cross_entropy(y_hat,y)+(0.5*dim)*par['alpha']*np.sum(np.square(par['weights']))
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -53,6 +49,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
             X_batch, y_batch = batch
             if scale:
                 X_batch=X_batch/255.
+                #X_batch,x_min,x_max=scaler_fit(X_batch)
             if transform:
                 y_batch=one_hot(y_batch,num_classes)
             grad_p=grad(X_batch,y_batch,par)
@@ -60,9 +57,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
             par['weights']-=momemtum['weights']
             momemtum['bias'] = gamma * momemtum['bias'] + eta * grad_p['bias']    
             par['bias']-=momemtum['bias']
-            #print 'norm gradient: ',np.linalg.norm(par['weights'])
-        loss_val[i]=loss(X_batch,y_batch,par)+(0.5/dim)*par['alpha']*np.sum(np.square(par['weights']))
-        #eta *= (1. / (1. + decay * epochs))
+        loss_val[i]=loss(X_batch,y_batch,par)
         if verbose:
             print('loss: {0:.4f}'.format(loss(X_batch,y_batch,par)) )
     return par,loss_val
@@ -70,6 +65,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
 def predict(X,par,scale=True):
     if scale:
         X=X[:]/255.
+        #X,x_min,x_max=scaler_fit(X[:])
     yhat=net(X,par)
     pred=yhat.argmax(axis=1)
     return pred	
