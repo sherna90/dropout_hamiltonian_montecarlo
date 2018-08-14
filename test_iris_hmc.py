@@ -31,6 +31,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 D=X_train.shape[1]
 num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),'bias':np.random.randn(num_classes),'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p, step_size=1, n_steps=3,scale=False,transform=True,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p, n_steps=3,scale=False,transform=True,verbose=1)
 mcmc.sample(1e4)
 print mcmc.state

@@ -5,13 +5,14 @@ import os
 from utils import *
 
 class HMC:
-    def __init__(self, X,y,logp, grad, start, step_size=1, n_steps=5,scale=True,transform=True,verbose=True):
+    def __init__(self, X,y,logp, grad, start, n_steps=5,scale=True,transform=True,verbose=True):
         self.start = start
-        self.step_size = step_size/(len(self.start))**(1/4)
+        self.step_size = 1./n_steps
         self.n_steps = n_steps
         self.logp = logp
         self.grad=grad
         self.state = start
+        self.momentum=self.draw_momentum()
         if scale:
             self.X,x_min,x_max=scaler_fit(X[:])
         else:
@@ -27,30 +28,41 @@ class HMC:
 
 
     def step(self):
-        q = self.state
+        lamb= 1.0 if  (np.random.uniform()>.5) else -1.0
+        epsilon=lamb*self.step_size*(1.0+np.random.normal(1))
+        q = self.state.copy()
         p = self.draw_momentum()
-        y, r = q.copy(), p.copy()
+        #y, r = q.copy(), p.copy()
+        grad_q=self.grad(self.X,self.y,q)
+        r={}
+        y={}
+        r['bias'] = p['bias'] - (epsilon/2)*grad_q['bias']
+        r['weights'] = p['weights'] - (epsilon/2)*grad_q['weights']
+        y['alpha']=q['alpha']
+        y['bias'] = q['bias'] + epsilon*r['bias']
+        y['weights'] = q['weights'] + epsilon*r['weights']
         for i in range(self.n_steps):
-            y, r = self.leapfrog(y, r)
+            y, r = self.leapfrog(y, r, epsilon)
+        grad_q=self.grad(self.X,self.y,y)
         if self.accept(q, y, p, r):
             q = y
             self._accepted += 1
-        self.state = q
+        r['bias'] = -r['bias'] + (epsilon/2)*grad_q['bias']
+        r['weights'] = -r['weights'] + (epsilon/2)*grad_q['weights']
+        self.state = q.copy()
+        self.momentum=r.copy()
         self._sampled += 1
         return self.state
 
     def acceptance_rate(self):
         return float(self._accepted)/self._sampled
 
-    def leapfrog(self,q, p):
+    def leapfrog(self,q, p,epsilon):
         grad_q=self.grad(self.X,self.y,q)
-        p['bias'] = p['bias'] + self.step_size/2*grad_q['bias']
-        p['weights'] = p['weights'] + self.step_size/2*grad_q['weights']
-        q['bias'] = q['bias'] + self.step_size*p['bias']
-        q['weights'] = q['weights'] + self.step_size*p['weights']
-        grad_q=self.grad(self.X,self.y,q)
-        p['bias'] = p['bias'] + self.step_size/2*grad_q['bias']
-        p['weights'] = p['weights'] + self.step_size/2*grad_q['weights']
+        p['bias'] = p['bias'] - epsilon*grad_q['bias']
+        p['weights'] = p['weights'] - epsilon*grad_q['weights']
+        q['bias'] = q['bias'] + epsilon*p['bias']
+        q['weights'] = q['weights'] + epsilon*p['weights']
         return q, p
 
 
