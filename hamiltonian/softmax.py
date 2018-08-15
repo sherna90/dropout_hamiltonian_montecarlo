@@ -58,7 +58,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
             momemtum['bias'] = gamma * momemtum['bias'] + eta * grad_p['bias']    
             par['bias']-=momemtum['bias']
         loss_val[i]=loss(X_batch,y_batch,par)
-        if verbose:
+        if verbose and (i%(epochs/10)==0):
             print('loss: {0:.4f}'.format(loss(X_batch,y_batch,par)) )
     return par,loss_val
 
