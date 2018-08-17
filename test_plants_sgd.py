@@ -7,7 +7,7 @@ import sys
 import time
 import h5py
 
-use_gpu=False
+use_gpu=True
 if use_gpu:
     import hamiltonian.softmax_gpu as softmax
 else:
