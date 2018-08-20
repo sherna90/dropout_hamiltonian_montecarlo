@@ -11,6 +11,7 @@ import seaborn as sns
 import sys 
 import pandas as pd
 
+sys.path.append("./") 
 use_gpu=False
 if use_gpu:
     import hamiltonian.softmax_gpu as softmax
