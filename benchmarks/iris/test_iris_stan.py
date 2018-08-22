@@ -1,17 +1,27 @@
 import numpy as np
-import matplotlib.pyplot as plt
+
 from sklearn import datasets
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import pystan
+import sys
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+sys.path.append("./") 
+use_gpu=False
+if use_gpu:
+    import hamiltonian.softmax_gpu as softmax
+else:
+    import hamiltonian.softmax as softmax
 
 scaler = StandardScaler()
 iris = datasets.load_iris()
-data = iris.data  
-labels = iris.target+1
+data = iris.data 
+labels = iris.target + 1 
 classes=np.unique(iris.target)
-X, y = iris.data, iris.target
+X, y = iris.data, iris.target + 1 
 X=scaler.fit_transform(X)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
@@ -21,25 +31,29 @@ data {
   int<lower=0> N;
   int<lower=0> D;
   int<lower=2> K;
-  vector[D] X[N];
-  int y[N];
+  row_vector[D] X[N];
+  int<lower=1,upper=K> y[N];
 }
 parameters {
-  matrix[K,D] weights;
+  matrix[D,K] weights;
   vector[K] bias;
 }
 transformed parameters {
-  vector[K] theta;
+  simplex[K] theta[N];
+  for (n in 1:N)
+    theta[n] = softmax(to_vector(X[n]*weights)+bias);
 }
 model {
   for (i in 1:D){
-    bias[i] ~ normal(0, 100);
     for (j in 1:K){
-      weights[i,j] ~ normal(0, 100);
+      weights[i,j] ~ normal(0, 1000);
     }
   }
+  for (k in 1:K){
+      bias[k] ~ normal(0, 1000);
+  }
   for (n in 1:N)
-    y[n] ~ categorical(softmax(weights*X[n]+bias));
+    y[n] ~ categorical(theta[n]);
 }
 """
 
@@ -56,18 +70,20 @@ print " ------------------------------------------------------------------------
 
 fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
 
+post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0),'alpha':1./10.}
 
-print "FIT MODEL:",fit
-beta = np.mean(fit.extract()['weights'], axis=0)
-ypred = np.dot(X_test, beta)
-
-
-
+y_pred=softmax.predict(X_test,post_par,False)+1
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
 
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True)
+import pandas as pd
 
-ax1.violinplot(fit.extract()['weights'], points=80, vert=False, widths=0.7, showmeans=True, showextrema=True, showmedians=True)
-ax1.set_title('HMC')
 
+
+b_cols=columns=['b1', 'b2','b3']
+b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
+print "mean bias : ",b_sample.mean()
+print "var bias : ",b_sample.var()
+for col in b_cols:
+    sns.kdeplot(b_sample[col], shade=True)
+plt.show()
