@@ -23,7 +23,7 @@ def grad(X,y,par):
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
-    grad['weights']=grad_w/y.shape[0]+(0.5/y.shape[0])*par['alpha']*par['weights']
+    grad['weights']=grad_w/y.shape[0]+0.5*np.sqrt(par['alpha']**X.shape[1])*par['weights']
     dim=par['weights'].shape[0]
     grad['bias']=grad_b/y.shape[0]
     return grad	
@@ -31,7 +31,7 @@ def grad(X,y,par):
 def loss(X, y, par):
     y_hat=net(X,par)
     dim=par['weights'].shape[0]
-    return -cross_entropy(y_hat,y)+(0.5*dim)*par['alpha']*np.sum(np.square(par['weights']))
+    return -cross_entropy(y_hat,y)+0.5*np.sqrt(par['alpha']**X.shape[1])*np.sum(np.square(par['weights']))
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -62,7 +62,7 @@ def sgd(X, y,num_classes, par,eta=1e-2,epochs=1e2,batch_size=20,scale=True,trans
             print('loss: {0:.4f}'.format(loss(X_batch,y_batch,par)) )
     return par,loss_val
 
-def predict(X,par,scale=True):
+def predict(X,par,scale=False):
     if scale:
         X=X[:]/255.
         #X,x_min,x_max=scaler_fit(X[:])

@@ -113,7 +113,7 @@ class HMC:
         return bias_data,weights_data
 
     def compute_mass_matrix(self,burnin):
-        alpha=0.5
+        alpha=0.9
         n=len(self._samples)
         bias_data=[]
         weights_data=[]
