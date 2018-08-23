@@ -24,6 +24,7 @@ Get data from :
     
 Run
 
-    python test_mnist_sgd.py
+    python benchmark/iris/test_sgd.py
 
-    python test_plants_sgd.py
+    python benchmark/iris/test_hmc.py
+
