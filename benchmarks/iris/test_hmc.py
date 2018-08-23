@@ -23,7 +23,7 @@ import hamiltonian.hmc as hmc
 epochs = 100
 eta=1e-2
 batch_size=10
-alpha=1./1000.
+alpha=1./100.
 scaler = StandardScaler()
 
 iris = datasets.load_iris()
@@ -38,7 +38,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 D=X_train.shape[1]
 num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),'bias':np.random.randn(num_classes),'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p, n_steps=100,scale=False,transform=True,verbose=1)
+par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,eta=eta,epochs=100,batch_size=20,scale=False,transform=True,verbose=0)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, par, n_steps=100,scale=False,transform=True,verbose=1)
 b_sample,w_sample=mcmc.sample(1e4,1e3)
 post_par=start_p={'weights':np.mean(w_sample,axis=0).reshape(start_p['weights'].shape),
     'bias':np.mean(b_sample,axis=0).reshape(start_p['bias'].shape),'alpha':alpha}
