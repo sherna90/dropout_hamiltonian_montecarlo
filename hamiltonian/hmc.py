@@ -117,23 +117,20 @@ class HMC:
     def compute_mass_matrix(self,burnin,cov=False):
         alpha=0.9
         n=len(self._samples)
-        bias_data=[]
-        weights_data=[]
-        for s in self._samples[burnin:]:
-            bias_data.append(s['bias'].reshape(-1))
-            weights_data.append(s['weights'].reshape(-1))
-        bias_data=np.array(bias_data)
-        weights_data=np.array(weights_data)
-        if cov:
-            self._mass_matrix['bias']=alpha*np.cov(bias_data.T)+(1.0-alpha)*np.identity((np.array(self.start['bias'])).size)
-            self._inv_mass_matrix['bias']=inv(self._mass_matrix['bias'])
-            self._mass_matrix['weights']=alpha*np.cov(weights_data.T)+(1.0-alpha)*np.identity((np.array(self.start['weights'])).size)
-            self._inv_mass_matrix['weights']=inv(self._mass_matrix['weights'])
-        else:
-            self._mass_matrix['bias']=np.var(bias_data,axis=0)*np.identity((np.array(self.start['bias'])).size)
-            self._inv_mass_matrix['bias']=inv(self._mass_matrix['bias'])
-            self._mass_matrix['weights']=np.var(weights_data,axis=0)*np.identity((np.array(self.start['weights'])).size)
-            self._inv_mass_matrix['weights']=inv(self._mass_matrix['weights'])
-
+        posterior={}
+        for var in self.start.keys():
+            posterior[var]=[]
+        for s in self._samples[int(burnin):]:
+            for var in self.start.keys():
+                posterior[var].append(s[var].reshape(-1))
+        for var in self.start.keys():
+            posterior[var]=np.array(posterior[var])
+            if cov:
+                self._mass_matrix[var]=alpha*np.cov(posterior[var].T)+(1.0-alpha)*np.identity((np.array(self.start[var])).size)
+                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
+            else:
+                self._mass_matrix[var]=np.var(posterior[var],axis=0)*np.identity((np.array(self.start[var])).size)
+                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
+            
         
             
