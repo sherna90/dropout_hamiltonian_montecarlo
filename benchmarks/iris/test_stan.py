@@ -46,11 +46,11 @@ transformed parameters {
 model {
   for (i in 1:D){
     for (j in 1:K){
-      weights[i,j] ~ normal(0, 1000);
+      weights[i,j] ~ normal(0, 100);
     }
   }
   for (k in 1:K){
-      bias[k] ~ normal(0, 1000);
+      bias[k] ~ normal(0, 100);
   }
   for (n in 1:N)
     y[n] ~ categorical(theta[n]);

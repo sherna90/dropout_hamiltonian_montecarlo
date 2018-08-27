@@ -37,12 +37,13 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 D=X_train.shape[1]
 num_classes=len(classes)
-start_p={'weights':np.random.randn(D,num_classes),'bias':np.random.randn(num_classes),'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,eta=eta,epochs=100,batch_size=20,scale=False,transform=True,verbose=0)
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, par, n_steps=100,scale=False,transform=True,verbose=1)
-b_sample,w_sample=mcmc.sample(1e4,1e3)
+start_p={'weights':np.random.randn(D,num_classes),
+        'bias':np.random.randn(num_classes)}
+hyper_p={'alpha':alpha}
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, n_steps=100,scale=False,transform=True,verbose=1)
+b_sample,w_sample=mcmc.sample(2e3,1e3)
 post_par=start_p={'weights':np.mean(w_sample,axis=0).reshape(start_p['weights'].shape),
-    'bias':np.mean(b_sample,axis=0).reshape(start_p['bias'].shape),'alpha':alpha}
+    'bias':np.mean(b_sample,axis=0).reshape(start_p['bias'].shape)}
 y_pred=softmax.predict(X_test,post_par,False)
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
