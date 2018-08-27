@@ -6,8 +6,9 @@ from utils import *
 from numpy.linalg import inv
 
 class HMC:
-    def __init__(self, X,y,logp, grad, start, n_steps=5,scale=True,transform=True,verbose=True):
+    def __init__(self, X,y,logp, grad, start,hyper, n_steps=5,scale=True,transform=True,verbose=True):
         self.start = start
+        self.hyper = hyper
         self.step_size = 1./n_steps
         self.n_steps = n_steps
         self.logp = logp
@@ -61,14 +62,13 @@ class HMC:
         return float(self._accepted)/self._sampled
 
     def leapfrog(self,q, p,epsilon):
-        grad_q=self.grad(self.X,self.y,q)
-        p['bias'] = p['bias'] + (epsilon/2.)*grad_q['bias']
-        p['weights'] = p['weights'] + (epsilon/2.)*grad_q['weights']
-        q['bias'] = q['bias'] + epsilon*self._inv_mass_matrix['bias'].dot(p['bias'].reshape(-1)).reshape(self.start['bias'].shape)
-        q['weights'] = q['weights'] + epsilon*self._inv_mass_matrix['weights'].dot(p['weights'].reshape(-1)).reshape(self.start['weights'].shape)
-        grad_q_new=self.grad(self.X,self.y,q)
-        p['bias'] = p['bias'] + (epsilon/2.)*grad_q_new['bias']
-        p['weights'] = p['weights'] + (epsilon/2.)*grad_q_new['weights']
+        grad_q=self.grad(self.X,self.y,q,self.hyper)
+        for var in self.start.keys():
+            p[var] = p[var] + (epsilon/2.)*grad_q[var]
+            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].dot(p[var].reshape(-1)).reshape(self.start[var].shape)
+        grad_q_new=self.grad(self.X,self.y,q,self.hyper)
+        for var in self.start.keys():
+            p[var] = p[var] + (epsilon/2.)*grad_q_new[var]
         return q, p
 
     def accept(self,q, y, p, r):
@@ -79,14 +79,15 @@ class HMC:
 
 
     def energy(self, q, p):
-        U=0.5*np.dot(p['weights'].reshape(-1).T,self._inv_mass_matrix['weights']).dot(p['weights'].reshape(-1))
-        U+=0.5*np.dot(p['bias'].T,self._inv_mass_matrix['bias']).dot(p['bias'])
-        return -self.logp(self.X,self.y,q) - U
+        U=0
+        for var in self.start.keys():
+            U+=0.5*np.dot(p[var].reshape(-1).T,self._inv_mass_matrix[var]).dot(p[var].reshape(-1))
+        return -self.logp(self.X,self.y,q,self.hyper) - U
 
 
     def draw_momentum(self):
-        momentum={'weights':np.zeros((self.start['weights'].shape)),'bias':np.zeros((self.start['bias'].shape))}
-        for var in momentum.keys():
+        momentum={}
+        for var in self.start.keys():
             dim=(np.array(self.start[var])).size
             if dim==1:
                 momentum[var]=np.random.normal(0,self._mass_matrix[var])
@@ -99,20 +100,21 @@ class HMC:
     def sample(self,niter=1e3,burnin=100):
         for i in range(int(niter)):
             if i>burnin and (i%(niter/10)==0):
-                self.compute_mass_matrix(int(burnin))
+                self.compute_mass_matrix(int(burnin),True)
             self._samples.append(self.step())
             if self._verbose and (i%(niter/10)==0):
                 print('acceptance rate : {0:.4f}'.format(self.acceptance_rate()) )
-        bias_data=[]
-        weights_data=[]
+        posterior={}
+        for var in self.start.keys():
+            posterior[var]=[]
         for s in self._samples[int(burnin):]:
-            bias_data.append(s['bias'].reshape(-1))
-            weights_data.append(s['weights'].reshape(-1))
-        bias_data=np.array(bias_data)
-        weights_data=np.array(weights_data)
-        return bias_data,weights_data
+            for var in self.start.keys():
+                posterior[var].append(s[var].reshape(-1))
+        for var in self.start.keys():
+            posterior[var]=np.array(posterior[var])
+        return posterior
 
-    def compute_mass_matrix(self,burnin):
+    def compute_mass_matrix(self,burnin,cov=False):
         alpha=0.9
         n=len(self._samples)
         bias_data=[]
@@ -122,10 +124,16 @@ class HMC:
             weights_data.append(s['weights'].reshape(-1))
         bias_data=np.array(bias_data)
         weights_data=np.array(weights_data)
-        self._mass_matrix['bias']=alpha*np.cov(bias_data.T)+(1.0-alpha)*np.identity((np.array(self.start['bias'])).size)
-        self._inv_mass_matrix['bias']=inv(self._mass_matrix['bias'])
-        self._mass_matrix['weights']=alpha*np.cov(weights_data.T)+(1.0-alpha)*np.identity((np.array(self.start['weights'])).size)
-        self._inv_mass_matrix['weights']=inv(self._mass_matrix['weights'])
+        if cov:
+            self._mass_matrix['bias']=alpha*np.cov(bias_data.T)+(1.0-alpha)*np.identity((np.array(self.start['bias'])).size)
+            self._inv_mass_matrix['bias']=inv(self._mass_matrix['bias'])
+            self._mass_matrix['weights']=alpha*np.cov(weights_data.T)+(1.0-alpha)*np.identity((np.array(self.start['weights'])).size)
+            self._inv_mass_matrix['weights']=inv(self._mass_matrix['weights'])
+        else:
+            self._mass_matrix['bias']=np.var(bias_data,axis=0)*np.identity((np.array(self.start['bias'])).size)
+            self._inv_mass_matrix['bias']=inv(self._mass_matrix['bias'])
+            self._mass_matrix['weights']=np.var(weights_data,axis=0)*np.identity((np.array(self.start['weights'])).size)
+            self._inv_mass_matrix['weights']=inv(self._mass_matrix['weights'])
 
         
             
