@@ -23,7 +23,7 @@ def grad(X,y,par,hyper):
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
-    grad['weights']=grad_w/y.shape[0]+0.5*np.sqrt(hyper['alpha']**X.shape[1])*par['weights']
+    grad['weights']=grad_w/y.shape[0]-0.5*par['weights']
     dim=par['weights'].shape[0]
     grad['bias']=grad_b/y.shape[0]
     return grad	
@@ -31,7 +31,7 @@ def grad(X,y,par,hyper):
 def loss(X, y, par,hyper):
     y_hat=net(X,par)
     dim=par['weights'].shape[0]
-    return -cross_entropy(y_hat,y)/y.shape[0]+0.5*np.sqrt(hyper['alpha']**X.shape[1])*np.sum(np.square(par['weights']))
+    return cross_entropy(y_hat,y)/y.shape[0]-0.5*np.sqrt(hyper['alpha']**dim)*np.sum(np.square(par['weights']))
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]

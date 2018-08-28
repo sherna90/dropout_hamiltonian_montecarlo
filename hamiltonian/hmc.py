@@ -42,7 +42,8 @@ class HMC:
 
     def step(self):
         direction = np.random.choice([-1, 1], p=[0.5, 0.5])
-        epsilon=direction*self.step_size*(1.0+np.random.normal(1))
+        #epsilon=direction*self.step_size*(1.0+np.random.normal(1))
+        epsilon=direction*0.2
         q = self.state.copy()
         p = self.draw_momentum()
         q_new=q.copy()
@@ -71,18 +72,19 @@ class HMC:
             p[var] = p[var] + (epsilon/2.)*grad_q_new[var]
         return q, p
 
-    def accept(self,q, y, p, r):
-        E_new = self.energy(y, r)
-        E = self.energy(q, p)
-        A = np.min(np.array([0, E_new - E]))
-        return (np.log(np.random.rand()) < A)
+    def accept(self,current_q, proposal_q, current_p, proposal_p):
+        E_new = self.energy(proposal_q, proposal_p)
+        E = self.energy(current_q, current_p)
+        A = np.exp(E - E_new)
+        g = np.random.rand()
+        return (g < A)
 
 
     def energy(self, q, p):
         U=0
         for var in self.start.keys():
             U+=0.5*np.dot(p[var].reshape(-1).T,self._inv_mass_matrix[var]).dot(p[var].reshape(-1))
-        return -self.logp(self.X,self.y,q,self.hyper) - U
+        return -self.logp(self.X,self.y,q,self.hyper) + U
 
 
     def draw_momentum(self):

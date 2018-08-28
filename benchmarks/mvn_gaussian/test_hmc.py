@@ -21,10 +21,13 @@ mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start
 posterior_sample=mcmc.sample(1e3,1e2)
 post_par=start_p={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shape)}
 
-b_cols=columns=['m1', 'm2']
+b_cols=columns=['x', 'y']
 b_sample = pd.DataFrame(posterior_sample['mu'], columns=b_cols)
+print start_p
 print "mean bias : ",b_sample.mean()
 print "var bias : ",b_sample.var()
-for col in b_cols:
-    sns.kdeplot(b_sample[col], shade=True)
+g = sns.jointplot(x="x", y="y", data=b_sample, kind="kde", color="k")
+g.plot_joint(plt.scatter, c="r", s=30, linewidth=1, marker="+")
+g.ax_joint.collections[0].set_alpha(0)
+g.set_axis_labels("$X$", "$Y$");
 plt.show()
