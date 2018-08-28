@@ -41,7 +41,7 @@ start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
 mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, n_steps=10,scale=False,transform=True,verbose=1)
-posterior_sample=mcmc.sample(2e3,1e3)
+posterior_sample=mcmc.sample(1e4,1e3)
 post_par=start_p={'weights':np.mean(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
     'bias':np.mean(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
 y_pred=softmax.predict(X_test,post_par,False)
