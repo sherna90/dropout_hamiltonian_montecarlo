@@ -18,20 +18,26 @@ def net(X,par):
     return yhat
 
 def grad(X,y,par,hyper):
+    n_data=float(y.shape[0])
     yhat=net(X,par)
     diff = yhat-y
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
-    grad['weights']=grad_w/y.shape[0]-0.5*par['weights']
-    dim=par['weights'].shape[0]
-    grad['bias']=grad_b/y.shape[0]
+    grad['weights']=grad_w/n_data-0.5*hyper['alpha']*par['weights']
+    grad['bias']=grad_b/n_data-0.5*hyper['alpha']*par['bias']
     return grad	
     
 def loss(X, y, par,hyper):
     y_hat=net(X,par)
-    dim=par['weights'].shape[0]
-    return cross_entropy(y_hat,y)/y.shape[0]-0.5*np.sqrt(hyper['alpha']**dim)*np.sum(np.square(par['weights']))
+    n_data=float(y.shape[0])
+    dim=par['weights'].shape
+    log_like=cross_entropy(y_hat,y)/n_data
+    log_like+=0.5*np.sqrt(hyper['alpha']**dim[0])
+    log_like+=0.5*np.sqrt(hyper['alpha']**dim[1])
+    log_like+=-0.5*hyper['alpha']*np.sum(np.square(par['weights']))
+    log_like+=-0.5*hyper['alpha']*np.sum(np.square(par['bias']))
+    return log_like
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]

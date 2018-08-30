@@ -42,8 +42,8 @@ class HMC:
 
     def step(self):
         direction = np.random.choice([-1, 1], p=[0.5, 0.5])
-        #epsilon=direction*self.step_size*(1.0+np.random.normal(1))
-        epsilon=direction*0.2
+        epsilon=direction*self.step_size*(1.0+np.random.normal(1))
+        #epsilon=direction*0.2
         q = self.state.copy()
         p = self.draw_momentum()
         q_new=q.copy()
@@ -116,7 +116,7 @@ class HMC:
             posterior[var]=np.array(posterior[var])
         return posterior
 
-    def compute_mass_matrix(self,burnin,cov=False):
+    def compute_mass_matrix(self,burnin,cov=True):
         alpha=0.9
         n=len(self._samples)
         posterior={}

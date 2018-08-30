@@ -21,7 +21,7 @@ else:
 import hamiltonian.hmc as hmc
 
 epochs = 100
-eta=1e-2
+eta=1e-1
 batch_size=10
 alpha=1./100.
 scaler = StandardScaler()
@@ -50,8 +50,6 @@ print(confusion_matrix(y_test, y_pred))
 
 b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
-print "mean bias : ",b_sample.mean()
-print "var bias : ",b_sample.var()
-for col in b_cols:
-    sns.kdeplot(b_sample[col], shade=True)
+w_sample = pd.DataFrame(posterior_sample['weights'])
+sns.pairplot(w_sample)
 plt.show()
