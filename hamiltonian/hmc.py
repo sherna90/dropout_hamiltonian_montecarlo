@@ -4,6 +4,7 @@ import scipy as sp
 import os
 from utils import *
 from numpy.linalg import inv
+from copy import deepcopy
 
 class HMC:
     def __init__(self, X,y,logp, grad, start,hyper, n_steps=5,scale=True,transform=True,verbose=True):
@@ -46,8 +47,8 @@ class HMC:
         #epsilon=direction*0.2
         q = self.state.copy()
         p = self.draw_momentum()
-        q_new=q.copy()
-        p_new=p.copy()
+        q_new=deepcopy(q)
+        p_new=deepcopy(p)
         for i in range(self.n_steps):
             q_new, p_new = self.leapfrog(q_new, p_new, epsilon)
         if self.accept(q, q_new, p, p_new):

@@ -78,12 +78,8 @@ print(confusion_matrix(y_test, y_pred))
 
 import pandas as pd
 
-
-
 b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
-print "mean bias : ",b_sample.mean()
-print "var bias : ",b_sample.var()
-for col in b_cols:
-    sns.kdeplot(b_sample[col], shade=True)
+#w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
+sns.pairplot(b_sample)
 plt.show()

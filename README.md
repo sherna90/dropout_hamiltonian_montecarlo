@@ -24,7 +24,7 @@ Get data from :
     
 Run
 
-    python benchmark/iris/test_sgd.py
-
-    python benchmark/iris/test_hmc.py
-
+    python benchmark/mvn_gaussian/test_hmc.py
+    ![Screenshot](hmc_mvn.png)
+    python benchmark/mvn_gaussian/test_metropolis.py
+    ![Screenshot](mh_mvn.png)
