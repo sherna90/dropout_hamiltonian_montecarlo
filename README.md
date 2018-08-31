@@ -25,6 +25,8 @@ Get data from :
 Run
 
     python benchmark/mvn_gaussian/test_hmc.py
-    ![Screenshot](hmc_mvn.png)
+![alt text](./hmc_mvn.png "Hamiltonian Monte Carlo Sampler")
+
     python benchmark/mvn_gaussian/test_metropolis.py
-    ![Screenshot](mh_mvn.png)
+
+![alt text](./mh_mvn.png "Metropolis-Hastings Sampler")
