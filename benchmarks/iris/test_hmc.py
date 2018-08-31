@@ -51,5 +51,5 @@ print(confusion_matrix(y_test, y_pred))
 b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
 w_sample = pd.DataFrame(posterior_sample['weights'])
-sns.pairplot(w_sample)
+sns.pairplot(b_sample)
 plt.show()
