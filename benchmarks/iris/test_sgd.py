@@ -13,9 +13,9 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-epochs = 100
+epochs = 1000
 eta=1e-2
-batch_size=10
+batch_size=30
 alpha=1e-3
 
 iris = datasets.load_iris()

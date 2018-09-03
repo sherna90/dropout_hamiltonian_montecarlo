@@ -5,7 +5,7 @@ import numpy as np
 from utils import *
 
 def cross_entropy(y_hat, y):
-    return np.sum(y * np.log(y_hat))
+    return np.sum(y * np.log(y_hat+1e-4))
 
 def softmax(y_linear):
     exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
@@ -49,7 +49,7 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,scale=True
     loss_val=np.zeros((np.int(epochs)))
     dim=par['weights'].shape[0]
     momemtum={'weights':np.zeros((par['weights'].shape)),'bias':np.zeros((par['bias'].shape))}
-    gamma=0.99
+    gamma=0.9
     for i in range(np.int(epochs)):
         for batch in iterate_minibatches(X, y, batch_size):
             X_batch, y_batch = batch
@@ -63,9 +63,9 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,scale=True
             par['weights']-=momemtum['weights']
             momemtum['bias'] = gamma * momemtum['bias'] + eta * grad_p['bias']    
             par['bias']-=momemtum['bias']
-        loss_val[i]=loss(X_batch,y_batch,par,hyper)
+        loss_val[i]=-loss(X_batch,y_batch,par,hyper)
         if verbose and (i%(epochs/10)==0):
-            print('loss: {0:.4f}'.format(loss(X_batch,y_batch,par,hyper)) )
+            print('loss: {0:.4f}'.format(loss_val[i]) )
     return par,loss_val
 
 def predict(X,par,scale=False):

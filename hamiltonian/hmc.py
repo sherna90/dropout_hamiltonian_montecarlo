@@ -5,6 +5,11 @@ import os
 from utils import *
 from numpy.linalg import inv
 from copy import deepcopy
+from multiprocessing import Pool
+import os 
+
+def unwrap_self_mcmc(arg, **kwarg):
+    return HMC.sample(*arg, **kwarg)
 
 class HMC:
     def __init__(self, X,y,logp, grad, start,hyper, n_steps=5,scale=True,transform=True,verbose=True):
@@ -45,17 +50,18 @@ class HMC:
         direction = np.random.choice([-1, 1], p=[0.5, 0.5])
         epsilon=direction*self.step_size*(1.0+np.random.normal(1))
         #epsilon=direction*0.2
-        q = self.state.copy()
+        q = deepcopy(self.state)
         p = self.draw_momentum()
+        print('process : %d, q : %s , p : %s '%(os.getpid(),q,p) )
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         for i in range(self.n_steps):
             q_new, p_new = self.leapfrog(q_new, p_new, epsilon)
         if self.accept(q, q_new, p, p_new):
-            q = q_new
+            q = deepcopy(q_new)
             p = p_new
             self._accepted += 1
-        self.state = q.copy()
+        self.state = deepcopy(q)
         self.momentum=p.copy()
         self._sampled += 1
         return self.state
@@ -100,13 +106,13 @@ class HMC:
         return momentum
 
 
-    def sample(self,niter=1e3,burnin=100):
+    def sample(self,niter=1e4,burnin=1e3):
         for i in range(int(niter)):
             if i>burnin and (i%(niter/10)==0):
-                self.compute_mass_matrix(int(burnin),True)
+                self.compute_mass_matrix(int(burnin),False)
             self._samples.append(self.step())
             if self._verbose and (i%(niter/10)==0):
-                print('acceptance rate : {0:.4f}'.format(self.acceptance_rate()) )
+                print('process : %d, acceptance rate : %s '%(os.getpid(),self.acceptance_rate()) )
         posterior={}
         for var in self.start.keys():
             posterior[var]=[]
@@ -115,6 +121,14 @@ class HMC:
                 posterior[var].append(s[var].reshape(-1))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
+        return posterior
+
+    def multicore_sample(self,niter=1e4,burnin=1e3,ncores=4):
+        pool = Pool(processes=ncores)
+        results=pool.map(unwrap_self_mcmc, zip([self]*4, [int(niter/ncores)]*ncores,[burnin]*ncores))
+        posterior={}
+        for var in self.start.keys():
+            posterior[var]=np.concatenate([r[var] for r in results],axis=0)
         return posterior
 
     def compute_mass_matrix(self,burnin,cov=True):

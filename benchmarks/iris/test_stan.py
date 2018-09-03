@@ -8,7 +8,7 @@ import pystan
 import sys
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+plt.style.use('seaborn-white')
 sys.path.append("./") 
 use_gpu=False
 if use_gpu:
@@ -67,8 +67,12 @@ iterations=2000 #iterations of algorithm
 print " ------------------------------------------------------------------------------------------------------------"
 print "| Running Gaussian-prior with: ",algorithm ," | Iterations: ",iterations," | N: ",N, " | D:", D, " | K:", K
 print " ------------------------------------------------------------------------------------------------------------"
+sm = pystan.StanModel(model_code=model_code)
+op = sm.optimizing(data=data)
 
-fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
+print op
+
+""" fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
 
 post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0),'alpha':1./10.}
 
@@ -82,4 +86,4 @@ b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
 #w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
 sns.pairplot(b_sample)
-plt.show()
+plt.show() """

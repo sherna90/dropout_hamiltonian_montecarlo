@@ -8,8 +8,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
+sns.set(color_codes=True)
 import sys 
 import pandas as pd
+import time
 
 sys.path.append("./") 
 use_gpu=False
@@ -23,7 +25,7 @@ import hamiltonian.hmc as hmc
 epochs = 100
 eta=1e-1
 batch_size=10
-alpha=1./100.
+alpha=1./10.
 scaler = StandardScaler()
 
 iris = datasets.load_iris()
@@ -41,7 +43,10 @@ start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
 mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, n_steps=10,scale=False,transform=True,verbose=1)
+t0=time.clock()
 posterior_sample=mcmc.sample(1e4,1e3)
+t1=time.clock()
+print("Ellapsed Time : ",t1-t0)
 post_par=start_p={'weights':np.mean(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
     'bias':np.mean(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
 y_pred=softmax.predict(X_test,post_par,False)
