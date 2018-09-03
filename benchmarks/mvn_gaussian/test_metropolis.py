@@ -27,7 +27,7 @@ print start_p
 print b_sample.mean()
 
 print b_sample
-
+sns.set(style="ticks")
 g = sns.jointplot(x="x", y="y", data=b_sample, kind="kde", color="k")
 g.plot_joint(plt.scatter, c="r", s=30, linewidth=1, marker="+")
 g.ax_joint.collections[0].set_alpha(0)
