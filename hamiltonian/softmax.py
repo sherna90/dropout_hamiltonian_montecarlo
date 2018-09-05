@@ -5,7 +5,7 @@ import numpy as np
 from utils import *
 
 def cross_entropy(y_hat, y):
-    return np.sum(y * np.log(y_hat+1e-4))
+    return np.sum(y * np.log(y_hat))
 
 def softmax(y_linear):
     exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
@@ -24,20 +24,22 @@ def grad(X,y,par,hyper):
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
-    grad['weights']=grad_w/n_data-0.5*hyper['alpha']*par['weights']
-    grad['bias']=grad_b/n_data-0.5*hyper['alpha']*par['bias']
+    grad['weights']=grad_w/n_data
+    grad['weights']+=hyper['alpha']*par['weights']
+    grad['bias']=grad_b/n_data
+    grad['bias']+=hyper['alpha']*par['bias']
     return grad	
     
 def loss(X, y, par,hyper):
     y_hat=net(X,par)
     n_data=float(y.shape[0])
     dim=par['weights'].shape
-    log_like=cross_entropy(y_hat,y)/n_data
-    log_like+=0.5*np.sqrt(hyper['alpha']**dim[0])
-    log_like+=0.5*np.sqrt(hyper['alpha']**dim[1])
+    log_like=cross_entropy(y_hat,y)
+    log_like+=0.5*dim[0]*np.log(hyper['alpha'])
+    log_like+=0.5*dim[1]*np.log(hyper['alpha'])
     log_like+=-0.5*hyper['alpha']*np.sum(np.square(par['weights']))
     log_like+=-0.5*hyper['alpha']*np.sum(np.square(par['bias']))
-    return log_like
+    return log_like/n_data
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]

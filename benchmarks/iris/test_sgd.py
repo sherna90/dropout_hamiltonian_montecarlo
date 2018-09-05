@@ -15,8 +15,8 @@ else:
 
 epochs = 1000
 eta=1e-2
-batch_size=30
-alpha=1e-3
+batch_size=100
+alpha=1e-2
 
 iris = datasets.load_iris()
 data = iris.data  
