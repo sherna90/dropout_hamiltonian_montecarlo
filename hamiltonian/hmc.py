@@ -123,7 +123,7 @@ class HMC:
             posterior[var]=np.array(posterior[var])
         return posterior
 
-    def multicore_sample(self,niter=1e4,burnin=1e3,ncores=4):
+    def multicore_sample(self,niter=1e4,burnin=1e3,ncores=8):
         pool = Pool(processes=ncores)
         results=pool.map(unwrap_self_mcmc, zip([self]*4, [int(niter/ncores)]*ncores,[burnin]*ncores))
         posterior={}

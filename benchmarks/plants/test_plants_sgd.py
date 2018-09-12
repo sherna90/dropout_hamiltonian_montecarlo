@@ -4,10 +4,11 @@ warnings.filterwarnings("ignore")
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 import sys
+sys.path.append('./')
 import time
 import h5py
 
-use_gpu=True
+use_gpu=False
 if use_gpu:
     import hamiltonian.softmax_gpu as softmax
 else:
@@ -33,8 +34,11 @@ num_classes=38
 import time
 
 start_time=time.time()
-start_p={'weights':np.random.randn(dim_data,num_classes),'bias':np.random.randn(num_classes),'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=False,verbose=1)
+start_p={'weights':np.random.randn(dim_data,num_classes),
+    'bias':np.random.randn(num_classes)}
+
+hyper_p={'alpha':alpha}
+par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=False,verbose=1)
 elapsed_time=time.time()-start_time 
 print(elapsed_time)
 y_pred=softmax.predict(X_test,par,scale=False)
