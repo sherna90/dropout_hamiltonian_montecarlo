@@ -6,16 +6,16 @@ from utils import *
 from numpy.linalg import inv
 from copy import deepcopy
 from multiprocessing import Pool
-from tqdm import tqdm, trange
 import os 
 
 def unwrap_self_mcmc(arg, **kwarg):
-    return HMC.sample(*arg, **kwarg)
+    return SGHMC.sample(*arg, **kwarg)
 
-class HMC:
-    def __init__(self, X,y,logp, grad, start,hyper, n_steps=5,scale=True,transform=True,verbose=True):
+class SGHMC:
+    def __init__(self, X,y,logp, grad, start,hyper,alpha, n_steps=5,scale=True,transform=True,verbose=True):
         self.start = start
         self.hyper = hyper
+        self.alpha = alpha
         self.step_size = 1./n_steps
         self.n_steps = n_steps
         self.logp = logp
@@ -47,37 +47,29 @@ class HMC:
         self._momentum=self.draw_momentum()
 
 
-    def step(self):
+    def step(self,X_batch,y_batch,state,momemtum):
         direction = np.random.choice([-1, 1], p=[0.5, 0.5])
         epsilon=direction*self.step_size*(1.0+np.random.normal(1))
         #epsilon=direction*0.2
-        q = deepcopy(self.state)
-        p = self.draw_momentum()
-        #print('process : %d, q : %s , p : %s '%(os.getpid(),q,p) )
+        q = deepcopy(state)
+        p = deepcopy(momemtum)
+        print('process : %d, q : %s , p : %s '%(os.getpid(),q,p) )
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         for i in range(self.n_steps):
-            q_new, p_new = self.leapfrog(q_new, p_new, epsilon)
-        if self.accept(q, q_new, p, p_new):
-            q = deepcopy(q_new)
-            p = p_new
-            self._accepted += 1
-        self.state = deepcopy(q)
-        self.momentum=p.copy()
+            q_new, p_new = self.leapfrog(q_new, p_new, epsilon,X_batch,y_batch)
         self._sampled += 1
-        return self.state
+        return (q_new, p_new)
 
     def acceptance_rate(self):
         return float(self._accepted)/self._sampled
 
-    def leapfrog(self,q, p,epsilon):
-        grad_q=self.grad(self.X,self.y,q,self.hyper)
+    def leapfrog(self,q, p,epsilon,X_batch,y_batch):
         for var in self.start.keys():
-            p[var] = p[var] + (epsilon/2.)*grad_q[var]
-            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].dot(p[var].reshape(-1)).reshape(self.start[var].shape)
-        grad_q_new=self.grad(self.X,self.y,q,self.hyper)
-        for var in self.start.keys():
-            p[var] = p[var] + (epsilon/2.)*grad_q_new[var]
+            q[var]+=p[var]
+        grad_q=self.grad(X_batch,y_batch,q,self.hyper)
+        for var in self.start.keys():    
+            p[var] =(1-self.alpha)*p[var] + (epsilon)*grad_q[var]
         return q, p
 
     def accept(self,current_q, proposal_q, current_p, proposal_p):
@@ -107,13 +99,15 @@ class HMC:
         return momentum
 
 
-    def sample(self,niter=1e4,burnin=1e3):
-        for i in tqdm(range(int(niter)),total=int(niter)):
-            if i>burnin and (i%(niter/10)==0):
-                self.compute_mass_matrix(int(burnin),False)
-            self._samples.append(self.step())
-            if self._verbose and (i%(niter/10)==0):
-                print('process : %d, acceptance rate : %s '%(os.getpid(),self.acceptance_rate()) )
+    def sample(self,niter=1e4,burnin=1e3,batch_size=20):
+        (state,momemtum)=(self.state,self._momentum)
+        for i in range(int(niter)):
+            for batch in self.iterate_minibatches(self.X, self.y, batch_size):
+                X_batch, y_batch = batch
+                if i>burnin and (i%(niter/10)==0):
+                    self.compute_mass_matrix(int(burnin),False)
+                (state,momemtum)=self.step(X_batch,y_batch,state,momemtum)
+                self._samples.append(state)
         posterior={}
         for var in self.start.keys():
             posterior[var]=[]
@@ -148,7 +142,10 @@ class HMC:
                 self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
             else:
                 self._mass_matrix[var]=np.var(posterior[var],axis=0)*np.identity((np.array(self.start[var])).size)
-                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
+                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])  
             
-        
-            
+    def iterate_minibatches(self,X, y, batchsize):
+        assert X.shape[0] == y.shape[0]
+        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
+            excerpt = slice(start_idx, start_idx + batchsize)
+            yield X[excerpt], y[excerpt]
