@@ -6,7 +6,7 @@ from sklearn.metrics import classification_report, confusion_matrix
 import sys
 import time
 import h5py
-
+sys.path.append("./")
 use_gpu=False
 if use_gpu:
     import hamiltonian.softmax_gpu as softmax

@@ -18,7 +18,7 @@ import hamiltonian.hmc as hmc
 start_p={'mu':10*np.random.randn(2)}
 hyper_p={'cov':np.array([[1.0,0.8],[0.8,1.0]])}
 mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, n_steps=10,scale=False,transform=False,verbose=1)
-posterior_sample=mcmc.multicore_sample(2e4,1e3)
+posterior_sample=mcmc.sample(2e4,1e3)
 post_par={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shape)}
 
 b_cols=columns=['x', 'y']
