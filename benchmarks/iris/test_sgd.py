@@ -13,7 +13,7 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-epochs = 1000
+epochs = 10000
 eta=1e-2
 batch_size=100
 alpha=1e-2
@@ -28,8 +28,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 D=X_train.shape[1]
 num_classes=len(classes)
-start_p={'weights':np.random.randn(D,num_classes),
-        'bias':np.random.randn(num_classes)}
+start_p={'weights':10*np.random.randn(D,num_classes),
+        'bias':10*np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
 par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=True,verbose=1)
 y_pred=softmax.predict(X_test,par,False)
