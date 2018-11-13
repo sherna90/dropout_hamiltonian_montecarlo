@@ -12,6 +12,7 @@ sns.set(color_codes=True)
 import sys 
 import pandas as pd
 import time
+import h5py 
 
 sys.path.append("./") 
 use_gpu=False
@@ -22,19 +23,22 @@ else:
 
 import hamiltonian.hmc as hmc
 
-alpha=1./(2**2)
 path_length=10
-iris = datasets.load_iris()
-data = iris.data  
-labels = iris.target
-classes=np.unique(iris.target)
-X, y = iris.data, iris.target
-X = (X - X.mean(axis=0)) / X.std(axis=0)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
+epochs=20
+batch_size=200
+alpha=1e-2
+data_path = 'data/'
+
+mnist_train=h5py.File('data/mnist_train.h5','r')
+X_train=mnist_train['X_train'][:].reshape((-1,28*28))
+y_train=mnist_train['y_train']
+mnist_test=h5py.File('data/mnist_test.h5','r')
+X_test=mnist_test['X_test'][:].reshape((-1,28*28))
+y_test=mnist_test['y_test']
 
 
 D=X_train.shape[1]
-num_classes=len(classes)
+num_classes=10
 start_p={'weights':10*np.random.randn(D,num_classes),
         'bias':10*np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
