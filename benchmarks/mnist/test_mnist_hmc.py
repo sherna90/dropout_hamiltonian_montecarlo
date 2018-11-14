@@ -21,7 +21,7 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-import hamiltonian.hmc as hmc
+import hamiltonian.sghmc as sghmc
 
 path_length=10
 epochs=20
@@ -42,9 +42,9 @@ num_classes=10
 start_p={'weights':10*np.random.randn(D,num_classes),
         'bias':10*np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=False,transform=True,verbose=1)
+mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=True,transform=True,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.sample(2e3,1e2,1e3)
+posterior_sample=mcmc.sample(100,1,10,20)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
@@ -62,9 +62,11 @@ y_pred=softmax.predict(X_test,post_par['mean'],False)
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
 
-b_cols=columns=['b1', 'b2','b3']
+b_cols=[]
+for i in range(1,num_classes+1):
+    b_cols.append('b'+str(i))
 w_cols=[]
-for i in range(1,13):
+for i in range(1,D*num_classes+1):
     w_cols.append('w'+str(i))
 
 b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
@@ -72,8 +74,4 @@ w_sample = pd.DataFrame(posterior_sample['weights'],columns=w_cols)
 
 print(b_sample.describe())
 print(w_sample.describe())
-sns.distplot(b_sample['b1'])
-sns.distplot(b_sample['b2'])
-sns.distplot(b_sample['b3'])
-#sns.pairplot(b_sample)
-plt.show()
+

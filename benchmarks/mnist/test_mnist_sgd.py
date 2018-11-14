@@ -35,7 +35,7 @@ import time
 start_time=time.time()
 start_p={'weights':np.random.randn(dim_data,num_classes),'bias':np.zeros((num_classes)),'alpha':alpha}
 hyper_p={'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=True,verbose=1)
+par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=True,transform=True,verbose=1)
 elapsed_time=time.time()-start_time 
 print(elapsed_time)
 y_pred=softmax.predict(X_test,par)
