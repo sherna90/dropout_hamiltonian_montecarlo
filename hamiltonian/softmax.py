@@ -5,7 +5,8 @@ import numpy as np
 from utils import *
 
 def cross_entropy(y_hat, y):
-    return np.mean(np.sum(y * np.log(y_hat),axis=1))
+    y_hat = np.clip(y_hat, 1e-7, 1 - 1e-7)
+    return np.sum(np.sum(y * - np.log(y_hat),axis=1))
 
 def softmax(y_linear):
     exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
@@ -39,6 +40,7 @@ def loss(X, y, par,hyper):
     log_prior+=0.5*dim[1]*np.log(hyper['alpha'])
     log_prior+=-0.5*hyper['alpha']*np.sum(np.square(par['weights']))
     log_prior+=-0.5*hyper['alpha']*np.sum(np.square(par['bias']))
+    #print(log_like,log_prior/n_data)
     return log_like+log_prior
 
 def iterate_minibatches(X, y, batchsize):

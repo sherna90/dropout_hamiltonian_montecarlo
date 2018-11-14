@@ -41,8 +41,8 @@ class HMC:
                 self._mass_matrix[var]=1
                 self._inv_mass_matrix[var]=1
             else:
-                self._mass_matrix[var]=np.identity(dim)
-                self._inv_mass_matrix[var]=np.identity(dim)
+                self._mass_matrix[var]=np.ones(dim)
+                self._inv_mass_matrix[var]=np.ones(dim)
         self._verbose=verbose
 
 
@@ -53,7 +53,6 @@ class HMC:
         q = deepcopy(state)
         p = self.draw_momentum()
         #p=deepcopy(momentum)
-        #print('process : %d, q : %s , p : %s '%(os.getpid(),q,p) )
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         for i in range(n_steps):
@@ -62,8 +61,8 @@ class HMC:
             q = deepcopy(q_new)
             p = p_new
             self._accepted += 1
-        else:
-            self._direction=-1.0
+        #else:
+        #    self._direction=-1.0
         return q,p
 
     def acceptance_rate(self):
@@ -74,7 +73,7 @@ class HMC:
         for var in self.start.keys():
             epsilon=direction*self.step_size[var]
             p[var] = p[var] - (0.5*epsilon)*grad_q[var]
-            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].dot(p[var].reshape(-1)).reshape(self.start[var].shape)
+            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].reshape(self.start[var].shape)*(p[var].reshape(-1)).reshape(self.start[var].shape)
             grad_q=self.grad(self.X,self.y,q,self.hyper)
             p[var] = p[var] - (0.5*epsilon)*grad_q[var]
         return q, p
@@ -90,8 +89,8 @@ class HMC:
     def energy(self, q, p):
         U=0
         for var in self.start.keys():
-            U+=0.5*np.dot(p[var].reshape(-1).T,self._inv_mass_matrix[var]).dot(p[var].reshape(-1))
-        return -self.logp(self.X,self.y,q,self.hyper) + U
+            U+=0.5*np.sum(p[var].reshape(-1)**2*self._inv_mass_matrix[var])
+        return self.logp(self.X,self.y,q,self.hyper) + U
 
 
     def draw_momentum(self):
@@ -101,8 +100,10 @@ class HMC:
             if dim==1:
                 momentum[var]=np.random.normal(0,self._mass_matrix[var])
             else:
-                mass_matrix=self._mass_matrix[var]
-                momentum[var]=np.random.multivariate_normal(np.zeros(dim), mass_matrix).reshape(self.start[var].shape)
+                momentum[var]=np.zeros(dim)
+                for i in range(dim):
+                    momentum[var][i]=np.random.normal(0,self._mass_matrix[var][i],1)
+            momentum[var]=momentum[var].reshape(self.start[var].shape)
         return momentum
 
 
@@ -123,6 +124,7 @@ class HMC:
             q,p=self.step(q,p)
             self._samples.append(q)
             if self._verbose and (i%(niter/10)==0):
+                #self.compute_mass_matrix(True)
                 print('process : %d, acceptance rate : %s '%(os.getpid(),self.acceptance_rate()) )
         posterior={}
         for var in self.start.keys():
@@ -143,8 +145,6 @@ class HMC:
         return posterior
 
     def compute_mass_matrix(self,cov=True):
-        alpha=0.9
-        n=len(self._samples)
         posterior={}
         for var in self.start.keys():
             posterior[var]=[]
@@ -153,14 +153,8 @@ class HMC:
                 posterior[var].append(s[var].reshape(-1))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
-            if cov:
-                self._mass_matrix[var]=alpha*np.cov(posterior[var].T)+(1.0-alpha)*np.identity((np.array(self.start[var])).size)
-                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
-            else:
-                self._mass_matrix[var]=np.var(posterior[var],axis=0)*np.identity((np.array(self.start[var])).size)
-                self._inv_mass_matrix[var]=inv(self._mass_matrix[var])
-                print(var)
-                print(self._mass_matrix[var]) 
+            self._mass_matrix[var]=np.var(posterior[var],axis=0)
+            self._inv_mass_matrix[var]=1./self._mass_matrix[var]
         self._momentum=self.draw_momentum()
             
         

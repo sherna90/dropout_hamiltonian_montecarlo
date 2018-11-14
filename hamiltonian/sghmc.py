@@ -34,7 +34,7 @@ class SGHMC(HMC):
         for var in self.start.keys():
             epsilon=direction*self.step_size[var]
             p[var] = p[var] - (0.5*epsilon)*grad_q[var]
-            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].dot(p[var].reshape(-1)).reshape(self.start[var].shape)
+            q[var] = q[var] + epsilon*self._inv_mass_matrix[var].reshape(self.start[var].shape)*(p[var].reshape(-1)).reshape(self.start[var].shape)
             grad_q=self.grad(X_batch,y_batch,q,self.hyper)
             p[var] = p[var] - (0.5*epsilon)*grad_q[var]
         return q, p

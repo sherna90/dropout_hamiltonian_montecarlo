@@ -13,18 +13,18 @@ import h5py
 num_classes = 10
 epochs = 20
 eta=1e-2
-batch_size=256
-alpha=1e-3
+batch_size=200
+alpha=1e-2
 # the data, shuffled and split between train and test sets
 data_path = 'data/'
 
 
 # Read in the data
 mnist_train=h5py.File(data_path+'mnist_train.h5','r')
-X_train=mnist_train['X_train']
+X_train=mnist_train['X_train'][:].reshape((-1,28*28))
 y_train=mnist_train['y_train']
 mnist_test=h5py.File(data_path+'mnist_test.h5','r')
-X_test=mnist_test['X_test']
+X_test=mnist_test['X_test'][:].reshape((-1,28*28))
 y_test=mnist_test['y_test']
 
 X_train = X_train[:]/255
@@ -41,7 +41,7 @@ model.add(Dense(10, activation='softmax', input_shape=(784,)))
 
 model.summary()
 
-sgd = SGD(lr=eta, decay=0, momentum=0.9, nesterov=True)
+sgd = SGD(lr=eta, decay=0, momentum=0.9)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
@@ -49,7 +49,7 @@ model.compile(loss='categorical_crossentropy',
 history = model.fit(X_train, y_train,
                     batch_size=batch_size,
                     epochs=epochs,
-                    verbose=1,
+                    verbose=0,
                     validation_data=(X_test, y_test_c))
 score = model.evaluate(X_test, y_test_c, verbose=0)
 print('Test loss:', score[0])
