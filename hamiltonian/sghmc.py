@@ -9,6 +9,7 @@ from multiprocessing import Pool
 import os 
 from hmc import HMC
 from tqdm import tqdm, trange
+import h5py 
 
 def unwrap_self_mcmc(arg, **kwarg):
     return SGHMC.sample(*arg, **kwarg)
@@ -39,7 +40,7 @@ class SGHMC(HMC):
             p[var] = p[var] - (0.5*epsilon)*grad_q[var]
         return q, p
 
-    def sample(self,niter=1e4,warmup=1e2,burnin=1e3,batch_size=20):
+    def sample(self,niter=1e4,warmup=1e2,burnin=1e3,batch_size=20,backend=None):
         total_iter=int(warmup+burnin)
         q,p=self.start,self.draw_momentum()
         for i in tqdm(range(total_iter),total=total_iter):
@@ -53,19 +54,29 @@ class SGHMC(HMC):
         while self._samples:
             self._samples.pop()
         self._accepted = 0
-        for i in tqdm(range(int(niter)),total=int(niter)):
-            for batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                X_batch, y_batch = batch
-                (q,p)=self.step(X_batch,y_batch,q,p)
-                self._samples.append(q)
-        posterior={}
-        for var in self.start.keys():
-            posterior[var]=[]
-        for s in self._samples[int(burnin):]:
+        if backend is None:
+            for i in tqdm(range(int(niter)),total=int(niter)):
+                for batch in self.iterate_minibatches(self.X, self.y, batch_size):
+                    X_batch, y_batch = batch
+                    (q,p)=self.step(X_batch,y_batch,q,p)
+                    self._samples.append(q)
+            posterior={var:[] for var in self.start.keys()}
+            for s in self._samples:
+                for var in self.start.keys():
+                    posterior[var].append(s[var].reshape(-1))
             for var in self.start.keys():
-                posterior[var].append(s[var].reshape(-1))
-        for var in self.start.keys():
-            posterior[var]=np.array(posterior[var])
+                posterior[var]=np.array(posterior[var])
+        else:
+            posterior=h5py.File(backend,'w')
+            num_samples=int(niter*self.X.shape[0]/batch_size)
+            dset = {var:posterior.create_dataset(var, (num_samples,self.start[var].reshape(-1).shape[0]), maxshape=(None,self.start[var].reshape(-1).shape[0]) ) for var in self.start.keys()}
+            for i in tqdm(range(int(niter)),total=int(niter)):
+                for batch in self.iterate_minibatches(self.X, self.y, batch_size):
+                    X_batch, y_batch = batch
+                    (q,p)=self.step(X_batch,y_batch,q,p)
+                    for var in self.start.keys():
+                        dset[var][-1,:]=q[var].reshape(-1)       
+                    posterior.flush()
         return posterior 
             
     def iterate_minibatches(self,X, y, batchsize):

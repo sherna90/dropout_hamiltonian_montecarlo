@@ -39,16 +39,16 @@ start_p={'weights':np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=False,transform=True,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.sample(1000,10,100,20)
+posterior_sample=mcmc.sample(1000,10,100,20,'iris_samples.h5')
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
 post_par={}
 
-post_par['mean']={'weights':np.mean(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
-    'bias':np.mean(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
-post_par['sd']={'weights':np.std(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
-    'bias':np.std(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
+post_par['mean']={'weights':np.mean(posterior_sample['weights'][:],axis=0).reshape(start_p['weights'].shape),
+    'bias':np.mean(posterior_sample['bias'][:],axis=0).reshape(start_p['bias'].shape)}
+post_par['sd']={'weights':np.std(posterior_sample['weights'][:],axis=0).reshape(start_p['weights'].shape),
+    'bias':np.std(posterior_sample['bias'][:],axis=0).reshape(start_p['bias'].shape)}
 
 
 y_pred=softmax.predict(X_test,post_par['mean'],False)
@@ -61,8 +61,8 @@ w_cols=[]
 for i in range(1,13):
     w_cols.append('w'+str(i))
 
-b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
-w_sample = pd.DataFrame(posterior_sample['weights'],columns=w_cols)
+b_sample = pd.DataFrame(posterior_sample['bias'][:], columns=b_cols)
+w_sample = pd.DataFrame(posterior_sample['weights'][:],columns=w_cols)
 
 print(b_sample.describe())
 print(w_sample.describe())
