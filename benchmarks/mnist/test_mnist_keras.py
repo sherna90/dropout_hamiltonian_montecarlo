@@ -13,7 +13,7 @@ import h5py
 num_classes = 10
 epochs = 20
 eta=1e-2
-batch_size=200
+batch_size=50
 alpha=1e-2
 # the data, shuffled and split between train and test sets
 data_path = 'data/'

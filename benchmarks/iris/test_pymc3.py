@@ -23,7 +23,7 @@ labels = iris.target
 classes=np.unique(iris.target)
 X, y = iris.data, iris.target
 X = (X - X.mean(axis=0)) / X.std(axis=0)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 with pm.Model() as model_s:
     alpha = pm.Normal('alpha', mu=0, sd=2, shape=3)
@@ -33,7 +33,8 @@ with pm.Model() as model_s:
 
     yl = pm.Categorical('yl', p=theta, observed=y_train)
     hmc=pm.step_methods.hmc.hmc.HamiltonianMC(path_length=2.0,is_cov=True,adapt_step_size=False)
-    trace_s = pm.sample(2000,step=hmc)
+    metropolis = pm.Metropolis()
+    trace_s = pm.sample(20000,step=metropolis)
 
 
 print(pm.summary(trace_s))
