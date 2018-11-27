@@ -22,6 +22,7 @@ else:
     import hamiltonian.softmax as softmax
 
 import hamiltonian.sghmc as sghmc
+import hamiltonian.utils as utils
 
 path_length=10
 epochs=20
@@ -31,18 +32,24 @@ data_path = 'data/'
 
 mnist_train=h5py.File('data/mnist_train.h5','r')
 X_train=mnist_train['X_train'][:].reshape((-1,28*28))
+X_train=X_train/255.
 y_train=mnist_train['y_train']
+
 mnist_test=h5py.File('data/mnist_test.h5','r')
 X_test=mnist_test['X_test'][:].reshape((-1,28*28))
+X_test=X_test/255.
 y_test=mnist_test['y_test']
 
 
+classes=np.unique(y_train)
 D=X_train.shape[1]
-num_classes=10
-start_p={'weights':10*np.random.randn(D,num_classes),
-        'bias':10*np.random.randn(num_classes)}
+num_classes=len(classes)
+y_train=utils.one_hot(y_train[:],num_classes)
+y_test=utils.one_hot(y_test[:],num_classes)
+start_p={'weights':1e-3*np.random.randn(D,num_classes),
+        'bias':1e-3*np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=True,transform=True,verbose=1)
+mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
 posterior_sample=mcmc.sample(10,1,10,20,backend='samples.h5')
 t1=time.clock()

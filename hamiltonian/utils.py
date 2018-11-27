@@ -24,3 +24,4 @@ def flatten(items):
                 yield sub_x
         else:
             yield x
+

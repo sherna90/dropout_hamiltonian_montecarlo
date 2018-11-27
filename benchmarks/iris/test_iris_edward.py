@@ -18,10 +18,10 @@ data = iris.data
 labels = iris.target
 classes=np.unique(iris.target)
 X, y = iris.data, iris.target
-X=scaler.fit_transform(X)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-D=X_train.shape[1]
 num_classes=len(classes)
+y=utils.one_hot(y,num_classes)
+X = (X - X.mean(axis=0)) / X.std(axis=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 niter=1e4
 
 # MODEL
@@ -53,7 +53,9 @@ tf.global_variables_initializer().run()
 
 for k in range(epoch):
     print "Epoch: %d" %(k)
-    info_dict = inference.update(feed_dict={x: X_batch.values, y_ph: Y_batch.values.flatten(),keep_prob:d_rate})
-    inference.print_progress(info_dict)
+    for batch in iterate_minibatches(X, y, batch_size):
+        X_batch, y_batch = batch
+        info_dict = inference.update(feed_dict={x: X_batch.values, y_ph: Y_batch.values.flatten(),keep_prob:d_rate})
+        inference.print_progress(info_dict)
 
 

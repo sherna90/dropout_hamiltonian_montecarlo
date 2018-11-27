@@ -20,10 +20,10 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-import hamiltonian.sghmc as sghmc
+import hamiltonian.hmc as hmc
 
-alpha=1./(2**2)
-path_length=2
+alpha=0.1
+path_length=100
 iris = datasets.load_iris()
 data = iris.data  
 labels = iris.target
@@ -37,9 +37,9 @@ num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=False,transform=True,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,scale=False,transform=True,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.sample(1000,10,100,20,'iris_samples.h5')
+posterior_sample=mcmc.sample(1e4,1e3)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

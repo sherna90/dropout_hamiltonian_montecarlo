@@ -12,27 +12,40 @@ if use_gpu:
     import hamiltonian.softmax_gpu as softmax
 else:
     import hamiltonian.softmax as softmax
+import hamiltonian.utils as utils
 
-epochs = 10000
-eta=1e-2
-batch_size=100
-alpha=1e-2
+epochs = 1e3
+eta=1e-1
+batch_size=50
+alpha=1/4.
 
 iris = datasets.load_iris()
 data = iris.data  
 labels = iris.target
 classes=np.unique(iris.target)
 X, y = iris.data, iris.target
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+X = (X - X.mean(axis=0)) / X.std(axis=0)
+num_classes=len(classes)
+y=utils.one_hot(y,num_classes)
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 
 D=X_train.shape[1]
 num_classes=len(classes)
-start_p={'weights':10*np.random.randn(D,num_classes),
-        'bias':10*np.random.randn(num_classes)}
+start_p={'weights':1e2*np.random.randn(D,num_classes),
+        'bias':1e2*np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=True,verbose=1)
-y_pred=softmax.predict(X_test,par,False)
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
-print par
+par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
+y_pred=softmax.predict(X_test,par)
+#print(classification_report(y_test, y_pred))
+#print(confusion_matrix(y_test, y_pred))
+print par['bias']
+print '-------------------------------------------'
+from sklearn.linear_model import LogisticRegression
+softmax_reg = LogisticRegression(multi_class="multinomial", solver="newton-cg", C=1/alpha,fit_intercept=True)
+softmax_reg.fit(X_train,np.argmax(y_train,axis=1))
+y_pred2 = softmax_reg.predict(X_test)
+#print(classification_report(y_test, y_pred2))
+#print(confusion_matrix(y_test, y_pred2))
+print softmax_reg.intercept_
