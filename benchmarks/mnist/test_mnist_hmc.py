@@ -24,7 +24,7 @@ else:
 import hamiltonian.sghmc as sghmc
 import hamiltonian.utils as utils
 
-path_length=10
+path_length=2
 epochs=20
 batch_size=200
 alpha=1e-2
@@ -51,34 +51,27 @@ start_p={'weights':1e-3*np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.sample(10,1,10,20,backend='samples.h5')
+posterior_sample=mcmc.multicore_sample(10,1,batch_size=50,backend=None,ncores=4)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
+post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+y_pred=softmax.predict(X_test,post_par)
+print(classification_report(y_test.argmax(axis=1), y_pred))
+print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
-post_par={}
+#b_cols=columns=['b1', 'b2','b3']
+#w_cols=[]
+#for i in range(1,13):
+#    w_cols.append('w'+str(i))
 
-post_par['mean']={'weights':np.mean(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
-    'bias':np.mean(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
-post_par['sd']={'weights':np.std(posterior_sample['weights'],axis=0).reshape(start_p['weights'].shape),
-    'bias':np.std(posterior_sample['bias'],axis=0).reshape(start_p['bias'].shape)}
+#b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
+#w_sample = pd.DataFrame(posterior_sample['weights'],columns=w_cols)
 
-
-y_pred=softmax.predict(X_test,post_par['mean'],False)
-
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
-
-b_cols=[]
-for i in range(1,num_classes+1):
-    b_cols.append('b'+str(i))
-w_cols=[]
-for i in range(1,D*num_classes+1):
-    w_cols.append('w'+str(i))
-
-b_sample = pd.DataFrame(posterior_sample['bias'], columns=b_cols)
-w_sample = pd.DataFrame(posterior_sample['weights'],columns=w_cols)
-
-print(b_sample.describe())
-print(w_sample.describe())
-
+#print(b_sample.describe())
+#print(w_sample.describe())
+#sns.distplot(b_sample['b1'])
+#sns.distplot(b_sample['b2'])
+#sns.distplot(b_sample['b3'])
+#sns.pairplot(b_sample)
+#plt.show()
