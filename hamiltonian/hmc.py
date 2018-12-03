@@ -30,11 +30,11 @@ class HMC:
         self._inv_mass_matrix={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            #self.step_size[var]=(1./dim)**(0.25)
-            self.step_size[var]=np.random.uniform(0.0104, 0.0156)
+            self.step_size[var]=(1./path_length*dim**0.25)
+            #self.step_size[var]=np.random.uniform(0.0104, 0.0156)
             if dim==1:
-                self._mass_matrix[var]=1
-                self._inv_mass_matrix[var]=1
+                self._mass_matrix[var]=1.0
+                self._inv_mass_matrix[var]=1.0
             else:
                 self._mass_matrix[var]=np.ones(dim)
                 self._inv_mass_matrix[var]=np.ones(dim)
@@ -51,15 +51,8 @@ class HMC:
         p = self.draw_momentum(rng)
         q_new=deepcopy(q)
         p_new=deepcopy(p)
-        grad_q=self.grad(self.X,self.y,q,self.hyper)
-        for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon[var])*grad_q[var]
-            q_new[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p_new[var]
-        for i in range(n_steps-1):
+        for i in range(n_steps):
             q_new, p_new = self.leapfrog(q_new, p_new, epsilon)
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
-        for var in self.start.keys():
-           p_new[var]-= (0.5*epsilon[var])*grad_q[var]
         if self.accept(q, q_new, p, p_new):
             q = q_new
             p = p_new
@@ -72,26 +65,29 @@ class HMC:
     def leapfrog(self,q, p,epsilon):
         grad_q=self.grad(self.X,self.y,q,self.hyper)
         for var in self.start.keys():
-            #dim=(np.array(self.start[var])).size
             p[var]-= (0.5*epsilon[var])*grad_q[var]
             q[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p[var]
+        grad_q=self.grad(self.X,self.y,q,self.hyper)
+        for var in self.start.keys():
+            p[var]-= (0.5*epsilon[var])*grad_q[var]
         return q, p
 
     def accept(self,current_q, proposal_q, current_p, proposal_p):
         accept=False
         E_new = self.energy(proposal_q,proposal_p)
         E = self.energy(current_q,current_p)
-        A = np.exp(E - E_new)
-        g = np.random.rand()
-        if np.isfinite(A) and (g < A):
-            accept=True
-        return accept
+        A = np.min(np.array([0, E_new - E]))
+        return (np.log(np.random.rand()) < A)
 
 
-    def energy(self, q, p):
+    def potential_energy(self,p):
         U=0
         for var in self.start.keys():
-            U+=0.5*np.sum(p[var].reshape(-1)**2)
+            U-=0.5*np.sum(np.square(p[var]))
+        return U
+
+    def energy(self, q, p):
+        U=self.potential_energy(p)
         K=self.logp(self.X,self.y,q,self.hyper)
         return K + U
 
@@ -100,9 +96,7 @@ class HMC:
         momentum={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            momentum[var]=np.zeros(dim)
-            for i in range(dim):
-                momentum[var][i]=rng.normal(0,self._mass_matrix[var][i])
+            momentum[var]=rng.normal(0,self._mass_matrix[var],dim)
             momentum[var]=momentum[var].reshape(self.start[var].shape)
         return momentum
 
