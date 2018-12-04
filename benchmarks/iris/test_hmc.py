@@ -27,7 +27,7 @@ from scipy import stats
 
 
 alpha=1/4.
-path_length=20
+path_length=10
 iris = datasets.load_iris()
 data = iris.data  
 labels = iris.target
@@ -45,7 +45,7 @@ start_p={'weights':1e-3*np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.sample(1e4,1e3)
+posterior_sample=mcmc.multicore_sample(1e4,1e3,None,4)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
