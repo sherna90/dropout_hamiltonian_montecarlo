@@ -38,14 +38,14 @@ start_p={'weights':1e2*np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 y_pred=softmax.predict(X_test,par)
-#print(classification_report(y_test, y_pred))
-#print(confusion_matrix(y_test, y_pred))
+print(classification_report(y_test.argmax(axis=1), y_pred))
+print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 print par['bias']
 print '-------------------------------------------'
 from sklearn.linear_model import LogisticRegression
 softmax_reg = LogisticRegression(multi_class="multinomial", solver="newton-cg", C=1/alpha,fit_intercept=True)
 softmax_reg.fit(X_train,np.argmax(y_train,axis=1))
 y_pred2 = softmax_reg.predict(X_test)
-#print(classification_report(y_test, y_pred2))
-#print(confusion_matrix(y_test, y_pred2))
+print(classification_report(y_test.argmax(axis=1), y_pred2))
+print(confusion_matrix(y_test.argmax(axis=1), y_pred2))
 print softmax_reg.intercept_

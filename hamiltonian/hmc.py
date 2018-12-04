@@ -30,8 +30,8 @@ class HMC:
         self._inv_mass_matrix={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            self.step_size[var]=(1./path_length*dim**0.25)
-            #self.step_size[var]=np.random.uniform(0.0104, 0.0156)
+            #self.step_size[var]=(1./path_length*dim**0.25)
+            self.step_size[var]=np.random.uniform(0.0104, 0.0156)
             if dim==1:
                 self._mass_matrix[var]=1.0
                 self._inv_mass_matrix[var]=1.0
@@ -49,31 +49,34 @@ class HMC:
         #epsilon={var:self.step_size[var] for var in self.start.keys()}
         q = deepcopy(state)
         p = self.draw_momentum(rng)
-        q_new=deepcopy(q)
-        p_new=deepcopy(p)
-        for i in range(n_steps):
-            q_new, p_new = self.leapfrog(q_new, p_new, epsilon)
+        q_new, p_new = self.leapfrog(q, p, epsilon,n_steps)
         if self.accept(q, q_new, p, p_new):
             q = q_new
             p = p_new
             self._accepted += 1
         return q,p
 
-    def acceptance_rate(self):
-        return float(self._accepted)/len(self._samples)
+    def acceptance_rate(self,samples):
+        return float(self._accepted)/len(samples)
 
-    def leapfrog(self,q, p,epsilon):
+    def leapfrog(self,q, p,epsilon,n_steps):
         grad_q=self.grad(self.X,self.y,q,self.hyper)
         for var in self.start.keys():
-            p[var]-= (0.5*epsilon[var])*grad_q[var]
-            q[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p[var]
+                p[var]-= (0.5*epsilon[var])*grad_q[var]    
+        for i in range(n_steps):
+            for var in self.start.keys():
+                q[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p[var]
+            if i!=n_steps-1:
+                grad_q=self.grad(self.X,self.y,q,self.hyper)
+                for var in self.start.keys():
+                    p[var]-= (0.5*epsilon[var])*grad_q[var]
         grad_q=self.grad(self.X,self.y,q,self.hyper)
         for var in self.start.keys():
-            p[var]-= (0.5*epsilon[var])*grad_q[var]
+                p[var]-= (0.5*epsilon[var])*grad_q[var]    
+                p[var]=-p[var]
         return q, p
 
     def accept(self,current_q, proposal_q, current_p, proposal_p):
-        accept=False
         E_new = self.energy(proposal_q,proposal_p)
         E = self.energy(current_q,current_p)
         A = np.min(np.array([0, E_new - E]))
@@ -83,12 +86,12 @@ class HMC:
     def potential_energy(self,p):
         U=0
         for var in self.start.keys():
-            U-=0.5*np.sum(np.square(p[var]))
+            U=0.5*np.sum(np.square(p[var]))
         return U
 
     def energy(self, q, p):
         U=self.potential_energy(p)
-        K=self.logp(self.X,self.y,q,self.hyper)
+        K=-self.logp(self.X,self.y,q,self.hyper)
         return K + U
 
 
@@ -116,7 +119,8 @@ class HMC:
             if i>burnin:
                 samples.append(q)
                 #if self._verbose and (i%(niter/10)==0):
-                #    print('acceptance rate : {0:.4f}'.format(self.acceptance_rate()) )
+                #    self.compute_mass_matrix(samples)
+                #    print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(samples)) )
         posterior={var:[] for var in self.start.keys()}
         for s in samples:
             for var in self.start.keys():
@@ -154,7 +158,7 @@ class HMC:
         posterior={var:np.concatenate([r[var] for r in results],axis=0) for var in self.start.keys()}
         return posterior
 
-    def compute_mass_matrix(self,samples,cov=True):
+    def compute_mass_matrix(self,samples):
         posterior={var:[] for var in self.start.keys()}
         for s in samples:
             for var in self.start.keys():
