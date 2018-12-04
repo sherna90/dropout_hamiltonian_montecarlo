@@ -84,14 +84,14 @@ class HMC:
 
 
     def potential_energy(self,p):
-        U=0
+        K=0
         for var in self.start.keys():
-            U=0.5*np.sum(np.square(p[var]))
-        return U
+            K=0.5*np.sum(np.square(p[var]))
+        return K
 
     def energy(self, q, p):
-        U=self.potential_energy(p)
-        K=-self.logp(self.X,self.y,q,self.hyper)
+        K=self.potential_energy(p)
+        U=-self.logp(self.X,self.y,q,self.hyper)
         return K + U
 
 
