@@ -24,7 +24,7 @@ import hamiltonian.sghmc as sghmc
 import hamiltonian.utils as utils
 
 alpha=1./4.
-path_length=4
+path_length=1
 iris = datasets.load_iris()
 classes=np.unique(iris.target)
 X, y = iris.data, iris.target
@@ -38,7 +38,7 @@ num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
+mcmc=sghmc.SGHMC(X_train,y_train,softmax.log_likelihood, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
 posterior_sample=mcmc.multicore_sample(1e4,1e3,batch_size=50,backend=None,ncores=4)
 t1=time.clock()
