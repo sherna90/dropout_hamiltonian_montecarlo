@@ -51,7 +51,7 @@ start_p={'weights':1e-3*np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.multicore_sample(10,1,batch_size=50,backend=None,ncores=4)
+posterior_sample=mcmc.multicore_sample(10,1,batch_size=200,backend=None,ncores=4)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

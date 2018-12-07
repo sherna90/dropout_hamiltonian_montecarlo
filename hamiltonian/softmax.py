@@ -45,11 +45,15 @@ def grad(X,y,par,hyper):
     grad['bias']+=hyper['alpha']*par['bias']/n_data
     return grad	
   
-def loss(X, y, par,hyper):
+def log_likelihood(X, y, par,hyper):
     #y_hat=net(X,par)
+    n_data=y.shape[0]
     y_linear = np.dot(X, par['weights']) + par['bias']
-    log_like=np.sum(cross_entropy(y_linear,y,log_enc=True))
-    return -(log_like+log_prior(par,hyper))
+    ll=np.sum(cross_entropy(y_linear,y,log_enc=True))/float(n_data)
+    return ll
+    
+def loss(X, y, par,hyper):
+   return -(log_likelihood(X, y, par,hyper)+log_prior(par,hyper))
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -68,7 +72,7 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=Tr
             for var in par.keys():
                 momemtum[var] = gamma * momemtum[var] + eta * grad_p[var]
                 par[var]-=momemtum[var]
-        loss_val[i]=loss(X_batch,y_batch,par,hyper)/float(batch_size)
+        loss_val[i]=loss(X_batch,y_batch,par,hyper)
         if verbose and (i%(epochs/10)==0):
             print('loss: {0:.8f}'.format(loss_val[i]) )
     return par,loss_val

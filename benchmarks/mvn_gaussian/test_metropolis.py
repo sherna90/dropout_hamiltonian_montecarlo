@@ -25,7 +25,7 @@ post_par={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shap
 b_cols=columns=['x', 'y']
 b_sample = pd.DataFrame(posterior_sample['mu'], columns=b_cols)
 print start_p
-print(b_sample)
+print(b_sample.describe())
 
 g = sns.jointplot(x="x", y="y", data=b_sample, kind="kde", color="k", shade=True)
 g.plot_joint(plt.scatter, c="r", s=30, linewidth=1, marker="+")

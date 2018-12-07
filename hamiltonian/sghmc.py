@@ -22,29 +22,19 @@ class SGHMC(HMC):
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size[var] for var in self.start.keys()}
         q = deepcopy(state)
-        p = self.draw_momentum(rng)
-        q_new=deepcopy(q)
-        p_new=deepcopy(p)
-        grad_q=self.grad(X_batch,y_batch,q,self.hyper)
-        for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon[var])*grad_q[var]
-            q_new[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p_new[var]
-        for i in range(n_steps-1):
-            q_new, p_new = self.leapfrog(q_new, p_new, epsilon,X_batch,y_batch)
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
-        for var in self.start.keys():
-           p_new[var]-= (0.5*epsilon[var])*grad_q[var]
-        if self.accept(q, q_new, p, p_new):
-            q = q_new
-            p = p_new
-            self._accepted += 1
-        return q,p
+        p = deepcopy(momemtum)
+        q_new, p_new = self.leapfrog(q, p, epsilon,X_batch,y_batch,n_steps)
+        return q_new,p_new
 
-    def leapfrog(self,q, p,epsilon,X_batch,y_batch):
-        grad_q=self.grad(X_batch,y_batch,q,self.hyper)
-        for var in self.start.keys():
-            p[var]-= (0.5*epsilon[var])*grad_q[var]
-            q[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p[var]
+    def leapfrog(self,q, p,epsilon,X_batch,y_batch,n_steps):
+        gamma=0.9
+        q_new = deepcopy(q)
+        p_new = deepcopy(p)
+        for i in range(n_steps):
+            grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
+            for var in self.start.keys():
+                p_new[var] = gamma * p_new[var] + epsilon[var] * grad_q[var]
+                q_new[var]+=p_new[var]
         return q, p
 
     def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):

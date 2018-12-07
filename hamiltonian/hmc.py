@@ -30,8 +30,8 @@ class HMC:
         self._inv_mass_matrix={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            #self.step_size[var]=(1./path_length*dim**0.25)
-            self.step_size[var]=np.random.uniform(0.0104, 0.0156)
+            self.step_size[var]=1./(path_length*dim**0.25)
+            #self.step_size[var]=np.random.uniform(0.0104, 0.0156)
             if dim==1:
                 self._mass_matrix[var]=1.0
                 self._inv_mass_matrix[var]=1.0
@@ -42,45 +42,45 @@ class HMC:
 
 
     def step(self,state,momentum,rng):
-        path_length = rng.rand() * self.path_length
-        n_steps = max(1, int(path_length / max(self.step_size.values())))
+        n_steps =int(self.path_length)
+        #n_steps = max(1, int(path_length / max(self.step_size.values())))
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size[var] for var in self.start.keys()}
-        #epsilon={var:self.step_size[var] for var in self.start.keys()}
         q = deepcopy(state)
         p = self.draw_momentum(rng)
         q_new, p_new = self.leapfrog(q, p, epsilon,n_steps)
-        if self.accept(q, q_new, p, p_new):
+        accepted=self.accept(q, q_new, p, p_new) 
+        if accepted:
             q = q_new
             p = p_new
-            self._accepted += 1
-        return q,p
+            self._accepted += 1 
+        return q,p,accepted
 
-    def acceptance_rate(self,samples):
-        return float(self._accepted)/len(samples)
+    def acceptance_rate(self,accepted,samples):
+        return np.sum(1.0*np.array(accepted))/len(samples)
 
     def leapfrog(self,q, p,epsilon,n_steps):
-        grad_q=self.grad(self.X,self.y,q,self.hyper)
-        for var in self.start.keys():
-                p[var]-= (0.5*epsilon[var])*grad_q[var]    
+        q_new=deepcopy(q)
+        p_new=deepcopy(p)
         for i in range(n_steps):
+            grad_q=self.grad(self.X,self.y,q_new,self.hyper)
             for var in self.start.keys():
-                q[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p[var]
-            if i!=n_steps-1:
-                grad_q=self.grad(self.X,self.y,q,self.hyper)
-                for var in self.start.keys():
-                    p[var]-= (0.5*epsilon[var])*grad_q[var]
-        grad_q=self.grad(self.X,self.y,q,self.hyper)
-        for var in self.start.keys():
-                p[var]-= (0.5*epsilon[var])*grad_q[var]    
-                p[var]=-p[var]
-        return q, p
+                p_new[var]-= (0.5*epsilon[var])*grad_q[var]
+                q_new[var]+=epsilon[var]*self._inv_mass_matrix[var].reshape(self.start[var].shape)*p_new[var]
+            grad_q=self.grad(self.X,self.y,q_new,self.hyper)
+            for var in self.start.keys():
+                p_new[var]-= (0.5*epsilon[var])*grad_q[var]
+        return q_new, p_new
 
     def accept(self,current_q, proposal_q, current_p, proposal_p):
+        accept=False
         E_new = self.energy(proposal_q,proposal_p)
-        E = self.energy(current_q,current_p)
-        A = np.min(np.array([0, E_new - E]))
-        return (np.log(np.random.rand()) < A)
+        E_current = self.energy(current_q,current_p)
+        A = np.exp(E_current - E_new)
+        g = np.random.rand()
+        if np.isfinite(A) and (g < A):
+            accept=True
+        return accept
 
 
     def potential_energy(self,p):
@@ -90,9 +90,9 @@ class HMC:
         return K
 
     def energy(self, q, p):
-        K=self.potential_energy(p)
+        K=-self.potential_energy(p)
         U=-self.logp(self.X,self.y,q,self.hyper)
-        return K + U
+        return K+U 
 
 
     def draw_momentum(self,rng):
@@ -106,21 +106,28 @@ class HMC:
 
     def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
         samples=[]
+        burnin_samples=[]
+        accepted=[]
         if rng==None:
-            rng = np.random.RandomState(0)
+            rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
-        for i in tqdm(range(int(niter+burnin))):
-            q,p=self.step(q,p,rng)
+        for i in tqdm(range(int(burnin))):
+            q,p,a=self.step(q,p,rng)
+            burnin_samples.append(q)
+            accepted.append(a)
             if i==burnin : 
-                acc_rate=self._accepted/float(burnin)
-                self.step_size={var:self.tune(self.step_size[var],acc_rate) for var in self.start.keys()}
+                self.compute_mass_matrix(burnin_samples,alpha=0.7)
+                acc_rate=self.acceptance_rate(accepted,burnin_samples)
+                #self.step_size={var:self.tune(self.step_size[var],acc_rate) for var in self.start.keys()}
                 print('burnin acceptance rate : {0:.4f}'.format(acc_rate))
                 self._accepted=0
-            if i>burnin:
-                samples.append(q)
-                #if self._verbose and (i%(niter/10)==0):
-                #    self.compute_mass_matrix(samples)
-                #    print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(samples)) )
+        accepted=[]
+        for i in tqdm(range(int(niter))):
+            q,p,a=self.step(q,p,rng)
+            accepted.append(a)
+            samples.append(q)
+            if self._verbose and (i%(niter/10)==0):
+                print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted,samples)) )
         posterior={var:[] for var in self.start.keys()}
         for s in samples:
             for var in self.start.keys():
@@ -158,14 +165,14 @@ class HMC:
         posterior={var:np.concatenate([r[var] for r in results],axis=0) for var in self.start.keys()}
         return posterior
 
-    def compute_mass_matrix(self,samples):
+    def compute_mass_matrix(self,samples,alpha=0.9):
         posterior={var:[] for var in self.start.keys()}
         for s in samples:
             for var in self.start.keys():
                 posterior[var].append(s[var].reshape(-1))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
-            self._mass_matrix[var]=np.var(posterior[var],axis=0)
+            self._mass_matrix[var]=alpha*self._mass_matrix[var]+(1-alpha)*np.var(posterior[var],axis=0)
             self._inv_mass_matrix[var]=1./self._mass_matrix[var]
             
     def tune(self,scale,acc_rate):
