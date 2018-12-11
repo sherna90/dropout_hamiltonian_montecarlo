@@ -7,22 +7,21 @@ from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
 
-def cross_entropy(y_est, y,log_enc=False):
-    if log_enc:
-        lse=logsumexp(y_est,axis=1)
-        y_hat=y_est-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
-    else:
-        y_hat = np.log(y_est)
+def cross_entropy(y_linear, y):
+    y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
+    lse=logsumexp(y_linear,axis=1)
+    y_hat=y_linear-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
     return np.sum(y *  y_hat,axis=1)
 
 def log_prior(par,hyper):
     dim=par['weights'].size+par['bias'].size
     log_prior=0.5*dim*np.log(hyper['alpha'])-dim*np.log(2*np.pi)
-    log_prior+=-0.5*hyper['alpha']*np.sum(np.square(par['weights']))
-    log_prior+=-0.5*hyper['alpha']*np.sum(np.square(par['bias']))
+    log_prior-=0.5*hyper['alpha']*np.sum(np.square(par['weights']))
+    log_prior-=0.5*hyper['alpha']*np.sum(np.square(par['bias']))
     return log_prior
 
 def softmax(y_linear):
+    y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
     exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
     norms = np.sum(exp, axis=1).reshape((-1,1))
     return exp / norms
@@ -36,6 +35,7 @@ def grad(X,y,par,hyper):
     n_data=float(y.shape[0])
     yhat=net(X,par)
     diff = yhat-y
+    diff=diff[:,:-1]
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
@@ -46,10 +46,9 @@ def grad(X,y,par,hyper):
     return grad	
   
 def log_likelihood(X, y, par,hyper):
-    #y_hat=net(X,par)
     n_data=y.shape[0]
     y_linear = np.dot(X, par['weights']) + par['bias']
-    ll=np.sum(cross_entropy(y_linear,y,log_enc=True))/float(n_data)
+    ll= np.sum(cross_entropy(y_linear,y))
     return ll
     
 def loss(X, y, par,hyper):
@@ -64,7 +63,7 @@ def iterate_minibatches(X, y, batchsize):
 def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
     loss_val=np.zeros((np.int(epochs)))
     momemtum={var:np.zeros((par[var].shape)) for var in par.keys()}
-    gamma=0.9
+    gamma=1-0.99
     for i in range(np.int(epochs)):
         for batch in iterate_minibatches(X, y, batch_size):
             X_batch, y_batch = batch
@@ -72,15 +71,16 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=Tr
             for var in par.keys():
                 momemtum[var] = gamma * momemtum[var] + eta * grad_p[var]
                 par[var]-=momemtum[var]
-        loss_val[i]=loss(X_batch,y_batch,par,hyper)
+        loss_val[i]=log_likelihood(X_batch,y_batch,par,hyper)
         if verbose and (i%(epochs/10)==0):
-            print('loss: {0:.8f}'.format(loss_val[i]) )
+            print('loss: {0:.4f}'.format(loss_val[i]) )
     return par,loss_val
 
 def predict(X,par):
     yhat=net(X,par)
     pred=yhat.argmax(axis=1)
     return pred	
+
 
 def check_gradient(X, y, par,hyper,dh=0.00001):
     grad_a=grad(X,y,par,hyper)

@@ -39,8 +39,8 @@ y_test=utils.one_hot(y_test[:],num_classes)
 import time
 
 start_time=time.time()
-start_p={'weights':1e-3*np.random.randn(D,num_classes),
-        'bias':1e-3*np.random.randn(num_classes)}
+start_p={'weights':1e-3*np.random.randn(D,num_classes-1),
+        'bias':1e-3*np.random.randn(num_classes-1)}
 hyper_p={'alpha':alpha}
 par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 elapsed_time=time.time()-start_time 

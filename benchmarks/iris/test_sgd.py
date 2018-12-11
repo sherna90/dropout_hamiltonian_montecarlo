@@ -14,7 +14,7 @@ else:
     import hamiltonian.softmax as softmax
 import hamiltonian.utils as utils
 
-epochs = 1e3
+epochs = 1e4
 eta=1e-1
 batch_size=50
 alpha=1/4.
@@ -32,9 +32,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle
 
 
 D=X_train.shape[1]
-num_classes=len(classes)
-start_p={'weights':1e2*np.random.randn(D,num_classes),
-        'bias':1e2*np.random.randn(num_classes)}
+K=len(classes)-1
+start_p={'weights':1e2*np.random.randn(D,K),
+        'bias':1e2*np.random.randn(K)}
 hyper_p={'alpha':alpha}
 par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 y_pred=softmax.predict(X_test,par)

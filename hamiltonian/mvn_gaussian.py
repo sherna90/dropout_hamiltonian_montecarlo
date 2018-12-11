@@ -15,6 +15,6 @@ def loss(X, y, par,hyper):
     dim=par['mu'].shape[0]
     cov=hyper['cov']
     log_loss=-0.5*np.dot(par['mu'].T,inv(cov)).dot(par['mu'])
-    log_loss+=-np.log(1./np.sqrt(linalg.det(cov)))
-    log_loss+=-dim*0.5*np.log(2*np.pi)
+    log_loss+=np.log(1./np.sqrt(linalg.det(cov)))
+    log_loss+=dim*0.5*np.log(2*np.pi)
     return -log_loss

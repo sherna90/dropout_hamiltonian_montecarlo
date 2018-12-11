@@ -21,10 +21,10 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-import hamiltonian.sghmc as sghmc
+import hamiltonian.hmc as hmc
 import hamiltonian.utils as utils
 
-path_length=2
+path_length=10
 epochs=20
 batch_size=200
 alpha=1e-2
@@ -46,12 +46,12 @@ D=X_train.shape[1]
 num_classes=len(classes)
 y_train=utils.one_hot(y_train[:],num_classes)
 y_test=utils.one_hot(y_test[:],num_classes)
-start_p={'weights':1e-3*np.random.randn(D,num_classes),
-        'bias':1e-3*np.random.randn(num_classes)}
+start_p={'weights':1e-3*np.random.randn(D,num_classes-1),
+        'bias':1e-3*np.random.randn(num_classes-1)}
 hyper_p={'alpha':alpha}
-mcmc=sghmc.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.multicore_sample(10,1,batch_size=200,backend=None,ncores=4)
+posterior_sample=mcmc.sample(1e3,1e2)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
