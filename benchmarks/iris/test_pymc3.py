@@ -12,11 +12,6 @@ import sys
 sys.path.append("./") 
 
 
-epochs = 1000
-eta=1e-2
-batch_size=100
-alpha=1e-2
-
 iris = datasets.load_iris()
 data = iris.data  
 labels = iris.target
@@ -26,16 +21,19 @@ X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 with pm.Model() as model_s:
-    alpha = pm.Normal('alpha', mu=0, sd=2, shape=3)
-    beta = pm.Normal('beta', mu=0, sd=2, shape=(4,3))
-    mu = alpha + pm.math.dot(X_train, beta)
+    alpha = pm.Normal('alpha', mu=0, sd=2, shape=2)
+    beta = pm.Normal('beta', mu=0, sd=2, shape=(4,2))
+    alpha_f = tt.concatenate([[0],alpha])
+    beta_f = tt.concatenate([np.zeros((4,1),beta)],axis=1)
+    mu = alpha_f + pm.math.dot(X_train, beta_f)
     theta = tt.nnet.softmax(mu)
 
     yl = pm.Categorical('yl', p=theta, observed=y_train)
-    hmc=pm.step_methods.hmc.hmc.HamiltonianMC(path_length=2.0,is_cov=True,adapt_step_size=False)
-    metropolis = pm.Metropolis()
-    trace_s = pm.sample(20000,step=metropolis)
-
+    #step = pm.Metropolis()
+    #start=pm.find_MAP()
+    step=pm.HamiltonianMC(path_length=10.0,is_cov=False,adapt_step_size=False)
+    #step = pm.NUTS()
+    trace_s = pm.sample(10000,step)
 
 print(pm.summary(trace_s))
 pm.traceplot(trace_s)

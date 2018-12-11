@@ -16,9 +16,6 @@ class MH:
         self.start = start
         self.hyper = hyper
         self.logp = logp
-        self.state = start
-        self._accepted=0
-        self._sampled=0
         self._update_sequential=update_sequential
         self._scale=scale
         self._log_factor=1.5
@@ -29,14 +26,13 @@ class MH:
 
     def step(self,q,rng):
         q_new=self.random_walk(q,rng)
-        if self.accept(q, q_new):
+        accepted=self.accept(q, q_new)
+        if accepted:
             q = deepcopy(q_new)
-            self._accepted += 1
-        self.state = q.copy()
-        return q
+        return q,accepted
 
-    def acceptance_rate(self):
-        return float(self._accepted)/float(len(self._samples))
+    def acceptance_rate(self,accepted,samples):
+        return np.sum(1.0*np.array(accepted))/len(samples)
 
 
     def accept(self,current_q, proposal_q):
@@ -60,8 +56,7 @@ class MH:
             factor=np.exp(rng.uniform(-self._log_factor,self._log_factor))
             dim=(np.array(self.start[var])).size
             if self._update_sequential:
-                for i in range(dim):
-                    q_new[var][i]+=factor*self._scale*rng.normal(0.0,1.0)
+                q_new[var]+=factor*self._scale*rng.normal(0.0,1.0,dim)
             else:
                 ind=rng.randint(dim)
                 q_new[var][ind]+=factor*self._scale*rng.normal(0.0,1.0)
@@ -71,20 +66,27 @@ class MH:
 
     def sample(self,niter=1e3,burnin=100,rng=None):
         samples=[]
+        burnin_samples=[]
+        accepted=[]
         if rng==None:
             rng = np.random.RandomState(0)
         q=self.start
-        for i in tqdm(range(int(niter+burnin))):
-            q=self.step(q,rng)
-            if i==burnin :
-                acc_rate=self._accepted/float(burnin)
+        for i in tqdm(range(int(burnin))):
+            q,a=self.step(q,rng)
+            burnin_samples.append(q)
+            accepted.append(a)
+            if i==burnin-1:
+                acc_rate=self.acceptance_rate(accepted,burnin_samples)
                 print('burnin acceptance rate : {0:.4f}'.format(acc_rate) )
+                del accepted[:]
+                del burnin_samples[:]
                 self._scale=self.tune(acc_rate)
-                self._accepted=0
-            if i>burnin:
-                samples.append(q)
-                #if self._verbose and (i%(niter/10)==0):
-                #    print('acceptance rate : {0:.4f}'.format(self.acceptance_rate()) )
+        for i in tqdm(range(int(niter))):
+            q,a=self.step(q,rng)
+            samples.append(q)
+            accepted.append(a)
+            if self._verbose and (i%(niter/10)==0):
+                print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted,samples)) )
         posterior={var:[] for var in self.start.keys()}
         for s in samples:
             for var in self.start.keys():
