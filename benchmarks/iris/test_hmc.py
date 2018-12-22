@@ -44,7 +44,7 @@ D=X_train.shape[1]
 start_p={'weights':1e-3*np.random.randn(D,K),
         'bias':1e-3*np.random.randn(K)}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=2,step_size=0.08,verbose=1)
 t0=time.clock()
 posterior_sample=mcmc.sample(1e4,1e3)
 t1=time.clock()

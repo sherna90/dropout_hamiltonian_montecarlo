@@ -18,7 +18,7 @@ from scipy import stats
 
 start_p={'mu':10*np.random.randn(2)}
 hyper_p={'cov':np.array([[1.0,0.8],[0.8,1.0]])}
-mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, path_length=20,verbose=0)
+mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, path_length=None,step_size=None,verbose=1)
 posterior_sample=mcmc.sample(1e3,1e2)
 post_par={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shape)}
 

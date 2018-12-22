@@ -8,32 +8,25 @@ from numpy.linalg import norm
 from scipy.special import logsumexp
 
 def cross_entropy(y_linear, y):
-    y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
-    lse=logsumexp(y_linear,axis=1)
-    y_hat=y_linear-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
-    return -np.sum(y *  y_hat,axis=1)
+    return np.log(1.0+np.exp(y_linear)) - y*y_linear
 
 def log_prior(par,hyper):
     log_prior=-0.5*np.sum(hyper['alpha']*np.square(par['weights']))
     log_prior-=0.5*np.sum(hyper['alpha']*np.square(par['bias']))
     return log_prior
 
-def softmax(y_linear):
-    y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
-    exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
-    norms = np.sum(exp, axis=1).reshape((-1,1))
-    return exp / norms
+def sigmoid(y_linear):
+    norms=(1.0+np.exp(-y_linear))
+    return 1.0 / norms
 
 def net(X,par):
     y_linear = np.dot(X, par['weights']) + par['bias']
-    yhat = softmax(y_linear)
+    yhat = sigmoid(y_linear)
     return yhat
 
 def grad(X,y,par,hyper):
-    n_data=float(y.shape[0])
     yhat=net(X,par)
     diff = yhat-y
-    diff=diff[:,:-1]
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
@@ -49,7 +42,7 @@ def log_likelihood(X, y, par,hyper):
     return ll
     
 def loss(X, y, par,hyper):
-   return -(log_likelihood(X, y, par,hyper)+log_prior(par,hyper))
+    return -(log_likelihood(X, y, par,hyper)+log_prior(par,hyper))
 
 def iterate_minibatches(X, y, batchsize):
     assert X.shape[0] == y.shape[0]
@@ -57,7 +50,7 @@ def iterate_minibatches(X, y, batchsize):
         excerpt = slice(start_idx, start_idx + batchsize)
         yield X[excerpt], y[excerpt]
 
-def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=True):
+def sgd(X, y, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
     loss_val=np.zeros((np.int(epochs)))
     momemtum={var:np.zeros((par[var].shape)) for var in par.keys()}
     gamma=1-0.99
@@ -75,7 +68,7 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=T
 
 def predict(X,par):
     yhat=net(X,par)
-    pred=yhat.argmax(axis=1)
+    pred=np.array( yhat > 0.5)
     return pred	
 
 
@@ -83,8 +76,8 @@ def check_gradient(X, y, par,hyper,dh=0.00001):
     grad_a=grad(X,y,par,hyper)
     x_plus=deepcopy(par)
     x_minus=deepcopy(par)
-    diff=deepcopy(par)
-    grad_f=deepcopy(par)
+    diff={}
+    grad_f={}
     for var in par.keys():
         x_plus[var]+=dh
         x_minus[var]-=dh
@@ -92,7 +85,7 @@ def check_gradient(X, y, par,hyper,dh=0.00001):
         f_minus=loss(X,y,x_minus,hyper)
         x_plus[var]=par[var]
         x_minus[var]=par[var]
-        grad_f[var]=(f_plus-f_minus)/(2*dh) 
+        grad_f[var]=(f_plus-f_minus)/(2.0*dh) 
         diff[var]=norm(grad_f[var]-np.sum(grad_a[var]))
     return grad_f    
     #return np.max([d for d in diff.values()])
