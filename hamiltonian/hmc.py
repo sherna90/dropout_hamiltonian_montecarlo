@@ -1,4 +1,3 @@
-
 import numpy as np
 import scipy as sp
 import os
@@ -10,18 +9,19 @@ from tqdm import tqdm, trange
 import h5py 
 import os 
 from scipy.optimize import check_grad
+import math 
 
 def unwrap_self_mcmc(arg, **kwarg):
     return HMC.sample(*arg, **kwarg)
 
 class HMC:
-    def __init__(self, X,y,logp, grad, start,hyper, path_length=10,verbose=True):
+    def __init__(self, X,y,logp, grad, start,hyper, path_length=None,step_size=None,verbose=True):
         self.X=X
         self.y=y
         self.start = start
         self.hyper = hyper
-        self.step_size = {}
-        self.path_length = path_length
+        self.step_size = step_size if step_size is not None else 1
+        self.path_length = path_length if path_length is not None else 2 * math.pi
         self.logp = logp
         self.grad=grad
         self._accepted=0
@@ -30,11 +30,9 @@ class HMC:
         self._inv_mass_matrix={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            self.step_size[var]=1./(dim**0.25)
-            #self.step_size[var]=np.random.uniform(0.0104, 0.0156)
             if dim==1:
-                self._mass_matrix[var]=1.0
-                self._inv_mass_matrix[var]=1.0
+                self._mass_matrix[var]=np.array(1.0)
+                self._inv_mass_matrix[var]=np.array(1.0)
             else:
                 self._mass_matrix[var]=np.ones(dim)
                 self._inv_mass_matrix[var]=np.ones(dim)
@@ -42,10 +40,9 @@ class HMC:
 
 
     def step(self,state,momentum,rng):
-        n_steps =int(self.path_length)
-        #n_steps = max(1, int(path_length / max(self.step_size.values())))
+        n_steps =max(1, int(self.path_length / self.step_size))
         direction = 1.0 if rng.rand() > 0.5 else -1.0
-        epsilon={var:direction*self.step_size[var] for var in self.start.keys()}
+        epsilon={var:direction*self.step_size for var in self.start.keys()}
         q = deepcopy(state)
         p = self.draw_momentum(rng)
         q_new, p_new = self.leapfrog(q, p, epsilon,n_steps)
@@ -76,8 +73,12 @@ class HMC:
         accept=False
         E_new = self.energy(proposal_q,proposal_p)
         E_current = self.energy(current_q,current_p)
+        #print(E_new,E_current)
         A = np.exp(E_current - E_new)
+        #print('p:',proposal_p,current_p)
+        #print('q:',proposal_q,current_q)
         g = rng.rand()
+        #print(g,A)
         if np.isfinite(A) and (g < A):
             accept=True
         return accept
@@ -118,7 +119,7 @@ class HMC:
             if i==burnin-1: 
                 self.compute_mass_matrix(burnin_samples,alpha=0.9)
                 acc_rate=self.acceptance_rate(accepted,burnin_samples)
-                self.step_size={var:self.tune(self.step_size[var],acc_rate) for var in self.start.keys()}
+                #self.step_size=self.tune(self.step_size,acc_rate)
                 print('burnin acceptance rate : {0:.4f}'.format(acc_rate))
                 del accepted[:]
                 del burnin_samples[:]

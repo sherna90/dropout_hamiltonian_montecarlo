@@ -12,14 +12,14 @@ def net(X,par):
 def grad(X,y,par,hyper):
     n_data=float(y.shape[0])
     yhat=net(X,par)
-    diff = yhat-y
+    diff = y-yhat
     grad_w = np.dot(X.T, diff)
     grad_b = np.sum(diff, axis=0)
     grad={}
     grad['weights']=2.0*grad_w/n_data
-    grad['weights']+=hyper['alpha']*par['weights']
+    grad['weights']-=hyper['alpha']*par['weights']
     grad['bias']=2.0*grad_b/n_data
-    grad['bias']+=hyper['alpha']*par['bias']
+    grad['bias']-=hyper['alpha']*par['bias']
     return grad	
     
 def loss(X, y, par,hyper):
