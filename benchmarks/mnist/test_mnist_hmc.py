@@ -49,7 +49,7 @@ y_test=utils.one_hot(y_test[:],num_classes)
 start_p={'weights':1e-3*np.random.randn(D,num_classes-1),
         'bias':1e-3*np.random.randn(num_classes-1)}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=2,step_size=2e-5,verbose=1)
 t0=time.clock()
 posterior_sample=mcmc.sample(1e3,1e2)
 t1=time.clock()

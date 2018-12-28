@@ -32,7 +32,7 @@ with pm.Model() as model_s:
 
     yl = pm.Categorical('yl', p=theta, observed=y_train)
     step=pm.HamiltonianMC(path_length=10.0,is_cov=False,adapt_step_size=False)
-    trace_s = pm.sample(10000,step)
+    trace_s = pm.sample(1000,step)
 
 energy = trace_s['energy']
 plt.hist(energy)

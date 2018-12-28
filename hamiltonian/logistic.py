@@ -11,9 +11,10 @@ def cross_entropy(y_linear, y):
     return np.log(1.0+np.exp(y_linear)) - y*y_linear
 
 def log_prior(par,hyper):
-    log_prior=-0.5*np.sum(hyper['alpha']*np.square(par['weights']))
-    log_prior-=0.5*np.sum(hyper['alpha']*np.square(par['bias']))
-    return log_prior
+    logpdf=lambda z,alpha,k : -0.5*np.sum(alpha*np.square(z))-0.5*k*np.log(1./alpha)-0.5*k*np.log(2*np.pi)
+    par_dims={var:np.array(par[var]).size for var in par.keys()}
+    log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
+    return np.sum(log_prior)
 
 def sigmoid(y_linear):
     norms=(1.0+np.exp(-y_linear))
