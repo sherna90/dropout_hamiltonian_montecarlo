@@ -23,7 +23,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle
 alpha=1./4.
 start_p={'weights':np.random.randn(D),'bias':np.random.randn(1)}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,logistic.loss, logistic.grad, start_p,hyper_p, path_length=1,step_size=0.08,verbose=1)
+mcmc=hmc.HMC(X_train,y_train,logistic.loss, logistic.grad, start_p,hyper_p, path_length=2,step_size=0.008,verbose=1)
 posterior_sample=mcmc.sample(1e3,1e2)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}

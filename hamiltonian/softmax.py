@@ -14,9 +14,10 @@ def cross_entropy(y_linear, y):
     return -np.sum(y *  y_hat,axis=1)
 
 def log_prior(par,hyper):
-    log_prior=-0.5*np.sum(hyper['alpha']*np.square(par['weights']))
-    log_prior-=0.5*np.sum(hyper['alpha']*np.square(par['bias']))
-    return log_prior
+    logpdf=lambda z,alpha,k : -0.5*np.sum(alpha*np.square(z))-0.5*k*np.log(1./alpha)-0.5*k*np.log(2*np.pi)
+    par_dims={var:np.array(par[var]).size for var in par.keys()}
+    log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
+    return np.sum(log_prior)
 
 def softmax(y_linear):
     y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
