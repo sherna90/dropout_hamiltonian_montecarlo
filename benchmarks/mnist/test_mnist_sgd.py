@@ -14,7 +14,7 @@ else:
     import hamiltonian.softmax as softmax
     
 import hamiltonian.utils as utils
-eta=1e-2
+eta=1e-5
 epochs=50
 batch_size=50
 alpha=1./4.
@@ -33,16 +33,17 @@ y_test=mnist_test['y_test']
 
 classes=np.unique(y_train)
 D=X_train.shape[1]
-num_classes=len(classes)
-y_train=utils.one_hot(y_train[:],num_classes)
-y_test=utils.one_hot(y_test[:],num_classes)
+K=len(classes)
+y_train=utils.one_hot(y_train[:],K)
+y_test=utils.one_hot(y_test[:],K)
 import time
 
 start_time=time.time()
-start_p={'weights':1e-3*np.random.randn(D,num_classes-1),
-        'bias':1e-3*np.random.randn(num_classes-1)}
+
+start_p={'weights':np.zeros((D,K)),
+        'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
+par,loss=softmax.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 elapsed_time=time.time()-start_time 
 print(elapsed_time)
 y_pred=softmax.predict(X_test,par)

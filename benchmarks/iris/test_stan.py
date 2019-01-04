@@ -10,11 +10,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-white')
 sys.path.append("./") 
-use_gpu=False
-if use_gpu:
-    import hamiltonian.softmax_gpu as softmax
-else:
-    import hamiltonian.softmax as softmax
 
 scaler = StandardScaler()
 iris = datasets.load_iris()
@@ -46,11 +41,11 @@ transformed parameters {
 model {
   for (i in 1:D){
     for (j in 1:K){
-      weights[i,j] ~ normal(0, 100);
+      weights[i,j] ~ normal(0, 2);
     }
   }
   for (k in 1:K){
-      bias[k] ~ normal(0, 100);
+      bias[k] ~ normal(0, 2);
   }
   for (n in 1:N)
     y[n] ~ categorical(theta[n]);
@@ -67,16 +62,16 @@ iterations=2000 #iterations of algorithm
 print " ------------------------------------------------------------------------------------------------------------"
 print "| Running Gaussian-prior with: ",algorithm ," | Iterations: ",iterations," | N: ",N, " | D:", D, " | K:", K
 print " ------------------------------------------------------------------------------------------------------------"
-sm = pystan.StanModel(model_code=model_code)
-op = sm.optimizing(data=data)
 
-print op
+"""sm = pystan.StanModel(model_code=model_code)
+"op = sm.optimizing(data=data)
+"print op"""
 
-""" fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
+fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
 
-post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0),'alpha':1./10.}
+post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0)}
 
-y_pred=softmax.predict(X_test,post_par,False)+1
+y_pred=softmax.predict(X_test,post_par)
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))
 
@@ -86,4 +81,4 @@ b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
 #w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
 sns.pairplot(b_sample)
-plt.show() """
+plt.show()

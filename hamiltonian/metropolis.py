@@ -47,7 +47,7 @@ class MH:
 
 
     def energy(self, q):
-        return self.logp(self.X,self.y,q,self.hyper)
+        return -self.logp(self.X,self.y,q,self.hyper)
 
 
     def random_walk(self,q,rng):
