@@ -20,9 +20,9 @@ X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 alpha=1./4.
-start_p={'weights':np.random.randn(D),'bias':np.random.randn(1)}
+start_p={'weights':np.zeros(D),'bias':np.zeros(1)}
 hyper_p={'alpha':alpha}
-par,loss=logistic.sgd(X_train,y_train,start_p,hyper_p)
+par,loss=logistic.sgd(X_train,y_train,start_p,hyper_p,eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 y_pred=logistic.predict(X_test,par)
 print(classification_report(y_test, y_pred))
 print(confusion_matrix(y_test, y_pred))

@@ -1,8 +1,3 @@
-import numpy as numpy
-
-import warnings
-warnings.filterwarnings("ignore")
-
 import numpy as np
 import seaborn as sns
 import sys 
@@ -18,13 +13,13 @@ from scipy import stats
 
 start_p={'mu':10*np.random.randn(2)}
 hyper_p={'cov':np.array([[1.0,0.8],[0.8,1.0]])}
-mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, path_length=None,step_size=None,verbose=1)
-posterior_sample=mcmc.sample(1e3,1e2)
+mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, path_length=10,verbose=1)
+posterior_sample,logp_samples=mcmc.sample(1e3,1e2)
 post_par={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shape)}
 
 b_cols=columns=['x', 'y']
 b_sample = pd.DataFrame(posterior_sample['mu'], columns=b_cols)
-print start_p
+
 print(b_sample.describe())
 sns.set_context("notebook", font_scale=1.1, rc={"lines.linewidth": 2.5})
 g = sns.jointplot(x="x", y="y", data=b_sample, kind="kde", color="k", shade=True)

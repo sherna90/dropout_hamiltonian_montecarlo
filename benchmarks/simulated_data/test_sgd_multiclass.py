@@ -15,13 +15,14 @@ import numpy as np
 
 D=2
 centers = [[-5, 0],  [5, -1], [10,10]]
+K=len(centers)
+print K
 X, y = make_blobs(n_samples=1000, centers=centers, cluster_std=1,random_state=40)
-y=utils.one_hot(y,len(centers))
+y=utils.one_hot(y,K)
 X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 alpha=1./4.
-K=len(centers)-1
-start_p={'weights':np.random.randn(D,K),'bias':np.random.randn(K)}
+start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 par,loss=softmax.sgd(X_train,y_train,len(centers),start_p,hyper_p,eta=1e-2,epochs=1e3)
 y_pred=softmax.predict(X_test,par)
@@ -47,9 +48,9 @@ print softmax_reg.coef_
 intercept = softmax_reg.intercept_.flatten()
 liblinear_p={'weights':coef,'bias':intercept}
 def plot_hyperplane(par, color):
-    bd = lambda x0,par,i :  (-(x0 * par['weights'][i,0]) - par['bias'][i]) / par['weights'][i,1]
+    bd = lambda x0,par,i :  (-(x0 * par['weights'][0,i]) - par['bias'][i]) / par['weights'][1,i]
     r=np.linspace(xmin,xmax)
-    for j in range(len(centers)-1):
+    for j in range(K):
         plt.plot(r,bd(r,par,j),ls="--", color=color)
 
 plot_hyperplane(par, "r")

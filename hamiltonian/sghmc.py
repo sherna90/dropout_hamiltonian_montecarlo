@@ -17,25 +17,25 @@ def unwrap_self_sgmcmc(arg, **kwarg):
 class SGHMC(HMC):
 
     def step(self,X_batch,y_batch,state,momemtum,rng):
-        path_length = rng.rand() * self.path_length
-        n_steps = max(1, int(path_length / max(self.step_size.values())))
+        n_steps =max(1, int(self.path_length / self.step_size))
         direction = 1.0 if rng.rand() > 0.5 else -1.0
-        epsilon={var:direction*self.step_size[var] for var in self.start.keys()}
+        epsilon={var:direction*self.step_size for var in self.start.keys()}
         q = deepcopy(state)
         p = deepcopy(momemtum)
         q_new, p_new = self.leapfrog(q, p, epsilon,X_batch,y_batch,n_steps)
         return q_new,p_new
 
     def leapfrog(self,q, p,epsilon,X_batch,y_batch,n_steps):
-        gamma=0.9
+        gamma=0.05
         q_new = deepcopy(q)
         p_new = deepcopy(p)
+        n_data=np.float(y_batch.shape[0])
         for i in range(n_steps):
             grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
             for var in self.start.keys():
-                p_new[var] = gamma * p_new[var] + epsilon[var] * grad_q[var]
+                p_new[var] = gamma * p_new[var] + (1./n_data)*epsilon[var] * grad_q[var]
                 q_new[var]+=p_new[var]
-        return q, p
+        return q_new, p_new
 
     def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
         if rng==None:
@@ -61,17 +61,6 @@ class SGHMC(HMC):
                     posterior[var].append(s[var].reshape(-1))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-        else:
-            posterior=h5py.File(backend,'w')
-            num_samples=int(niter*self.X.shape[0]/batch_size)
-            dset = {var:posterior.create_dataset(var, (num_samples,self.start[var].reshape(-1).shape[0]), maxshape=(None,self.start[var].reshape(-1).shape[0]) ) for var in self.start.keys()}
-            for i in tqdm(range(int(niter)),total=int(niter)):
-                for batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                    X_batch, y_batch = batch
-                    (q,p)=self.step(X_batch,y_batch,q,p)
-                    for var in self.start.keys():
-                        dset[var][-1,:]=q[var].reshape(-1)       
-                    posterior.flush()
         return posterior 
             
     def iterate_minibatches(self,X, y, batchsize):
