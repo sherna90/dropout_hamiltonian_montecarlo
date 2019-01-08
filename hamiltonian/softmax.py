@@ -73,10 +73,14 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=T
             print('loss: {0:.4f}'.format(loss_val[i]) )
     return par,loss_val
 
-def predict(X,par):
+def predict(X,par,prob=False):
     yhat=net(X,par)
     pred=yhat.argmax(axis=1)
-    return pred	
+    if prob:
+        out=yhat
+    else:
+        out=pred
+    return out	
 
 
 def check_gradient(X, y, par,hyper,dh=0.00001):

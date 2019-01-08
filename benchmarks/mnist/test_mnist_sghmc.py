@@ -14,7 +14,7 @@ import h5py
 
 sys.path.append("./") 
 import hamiltonian.softmax as softmax
-import hamiltonian.hmc as hmc
+import hamiltonian.sghmc as sampler
 import hamiltonian.utils as utils
 
 path_length=10
@@ -42,9 +42,9 @@ y_test=utils.one_hot(y_test[:],num_classes)
 start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
+mcmc=sampler.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2)
+posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size=batch_size)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

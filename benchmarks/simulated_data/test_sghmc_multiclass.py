@@ -35,25 +35,20 @@ y_pred=softmax.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 print post_par['weights']
+
 print '-------------------------------------------'
-
-""" sns.set()
-plt.figure()
-plt.scatter(X[:, 0], X[:, 1],marker='o', c=y,s=25, edgecolor='k')
-plt.axis('tight')
-xmin, xmax = plt.xlim()
-ymin, ymax = plt.ylim()
-
-def plot_hyperplane(par,var, color):
-    bd = lambda x0,par,i :  (-(x0 * par['weights'][i,0]) - par['bias'][i]) / par['weights'][i,1]
-    bd_hpd_m = lambda x0,par,var,i :  (-(x0 * (par['weights'][i,0]- var['weights'][i,0]) - (par['bias'][i]-var['bias'][i]))) / (par['weights'][i,1]-var['weights'][i,1])
-    bd_hpd_p = lambda x0,par,var,i :  (-(x0 * (par['weights'][i,0] +var['weights'][i,0]) - (par['bias'][i]+ var['bias'][i]))) / (par['weights'][i,1]+var['weights'][i,1])
-    r=np.linspace(xmin,xmax)
-    for j in range(len(centers)-1):
-        plt.plot(r,bd(r,par,j),ls="--", color=color)
-        plt.fill_between(r, bd_hpd_m(r,par,var,j), bd_hpd_p(r,par,var,j), color=color, alpha=0.5)
-
-plot_hyperplane(post_par,post_par_var, "r")
-#plot_hyperplane(liblinear_p, "c")
+#sns.set()
+x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
+y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
+h = .02  # step size in the mesh
+xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+Z = softmax.predict(np.c_[xx.ravel(), yy.ravel()],post_par,True)
+Z = Z.reshape((xx.shape[0],xx.shape[1],3))
+plt.imshow(Z, extent=(x_min, x_max, y_min, y_max), origin="lower",alpha=.8)
+plt.scatter(X[:, 0], X[:, 1], c=np.array(["r", "g", "b"])[np.argmax(y,axis=1)], edgecolors='k')
+plt.xlim(xx.min(), xx.max())
+plt.ylim(yy.min(), yy.max())
+plt.xticks(())
+plt.yticks(())
+plt.tight_layout()
 plt.show()
- """
