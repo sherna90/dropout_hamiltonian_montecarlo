@@ -45,13 +45,11 @@ class HMC:
         n_steps=2
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
-        cache = {var: np.zeros_like(self.start[var]) for var in self.start.keys()}
         q = state.copy()
         p = self.draw_momentum(rng)
         q_new = deepcopy(q)
         p_new = deepcopy(p)
         for i in range(n_steps):
-            #print('step:',i)
             q_new, p_new=self.leapfrog_nocache(q_new, p_new, epsilon)
             #q_new, p_new,cache=self.leapfrog(q_new, p_new, epsilon,cache)
         acceptprob=self.accept(q, q_new, p, p_new)
@@ -154,19 +152,6 @@ class HMC:
                 posterior[var].append(s[var].reshape(-1))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
-        #return posterior
-        #if backend is None:
-        #    for i in tqdm(range(int(niter)),total=int(niter)):
-        #        q,p=self.step(q,p)
-        #        self._samples.append(q)
-        #        if self._verbose and (i%(niter/10)==0):
-        #            print('acceptance rate : {0:.4f}'.format(self.acceptance_rate()) )
-        #    posterior={var:[] for var in self.start.keys()}
-        #    for s in self._samples:
-        #        for var in self.start.keys():
-        #            posterior[var].append(s[var].reshape(-1))
-        #    for var in self.start.keys():
-        #        posterior[var]=np.array(posterior[var])
         #else:
         #    posterior=h5py.File(backend,'w')
         #    num_samples=int(niter)
