@@ -8,7 +8,7 @@ from sklearn.linear_model import LogisticRegression
 import sys
 sys.path.append("./")
 import hamiltonian.softmax as softmax 
-import hamiltonian.hmc as hmc
+import hamiltonian.sghmc as sampler
 import hamiltonian.utils as utils
 import numpy as np
 
@@ -25,8 +25,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle
 alpha=1./4.
 start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=2,verbose=1)
-posterior_sample,logp_samples=mcmc.sample(1e4,1e3)
+mcmc=sampler.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=2,verbose=1)
+posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size=50)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 post_par_var={var:np.std(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 y_pred=softmax.predict(X_test,post_par)
@@ -37,8 +37,6 @@ print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 print post_par['weights']
 print '-------------------------------------------'
 
-plt.hist(logp_samples)
-plt.show()
 """ sns.set()
 plt.figure()
 plt.scatter(X[:, 0], X[:, 1],marker='o', c=y,s=25, edgecolor='k')

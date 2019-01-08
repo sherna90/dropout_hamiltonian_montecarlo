@@ -38,16 +38,17 @@ plt.scatter(X[:, 0], X[:, 1],marker='o', c=y,s=25, edgecolor='k')
 plt.axis('tight')
 xmin, xmax = plt.xlim()
 ymin, ymax = plt.ylim()
-def plot_hyperplane(par,var, color):
+
+def plot_hyperplane(par_mean,par_var, color):
     bd = lambda x0,par :  (-(x0 * par['weights'][0]) - par['bias']) / par['weights'][1]
     r=np.linspace(xmin,xmax)
-    par_m={var:post_par[var]-np.sqrt(post_par_var[var]) for var in par.keys()}
-    par_p={var:post_par[var]+np.sqrt(post_par_var[var]) for var in par.keys()}
-    plt.plot(r,bd(r,par),ls="-", color=color)
+    par_m={var:par_mean[var]-np.sqrt(par_var[var]) for var in par_mean.keys()}
+    par_p={var:par_mean[var]+np.sqrt(par_var[var]) for var in par_mean.keys()}
+    plt.plot(r,bd(r,par_mean),ls="-", color=color)
     plt.plot(r,bd(r,par_m),ls="--", color=color, alpha=0.5)
     plt.plot(r,bd(r,par_p),ls="--", color=color, alpha=0.5)
-    plt.fill_between(r, bd(r,par),  bd(r,par_p), color=color, alpha=0.5)
-    #plt.fill_between(r, bd(r,par_m),  bd(r,par), color=color, alpha=0.5)
+    #plt.fill_between(r, bd(r,par_mean),  bd(r,par_p), color=color, alpha=0.5)
+    #plt.fill_between(r, bd(r,par_m),  bd(r,par_mean), color=color, alpha=0.5)
     
 plot_hyperplane(post_par, post_par_var,"b")
 plt.show()
