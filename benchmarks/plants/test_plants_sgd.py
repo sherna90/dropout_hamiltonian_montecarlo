@@ -15,9 +15,9 @@ else:
     import hamiltonian.softmax as softmax
 
 eta=1e-2
-epochs=20
-batch_size=256
-alpha=1e-3
+epochs=100
+batch_size=250
+alpha=1e-2
 data_path = 'data/'
 
 plants_train=h5py.File(data_path+'train_features_labels.h5','r')
@@ -38,10 +38,10 @@ start_p={'weights':np.random.randn(dim_data,num_classes),
     'bias':np.random.randn(num_classes)}
 
 hyper_p={'alpha':alpha}
-par,loss=softmax.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,scale=False,transform=False,verbose=1)
+par,loss=softmax.sgd_dropout(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 elapsed_time=time.time()-start_time 
 print(elapsed_time)
-y_pred=softmax.predict(X_test,par,scale=False)
+y_pred=softmax.predict(X_test,par)
 y_test_c=np.argmax(y_test[:],axis=1)
 print(classification_report(y_test_c, y_pred))
 print(confusion_matrix(y_test_c, y_pred))
