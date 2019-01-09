@@ -82,6 +82,36 @@ def predict(X,par,prob=False):
         out=pred
     return out	
 
+def sgd_dropout(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=True,p=0.5):
+    loss_val=np.zeros((np.int(epochs)))
+    dim=par['weights'].shape[0]
+    momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
+    gamma=0.9
+    for i in range(int(epochs)):
+        for batch in iterate_minibatches(X, y, batch_size):
+            X_batch, y_batch = batch
+            n_x,n_y=X_batch.shape
+            Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
+            X_batch_dropout=np.multiply(X_batch,Z)
+            grad_p=grad(X_batch_dropout,y_batch,par,hyper)
+            for var in par.keys():
+                momemtum[var] = gamma * momemtum[var] + eta * grad_p[var]/y_batch.shape[0]
+                par[var]+=momemtum[var]
+        loss_val[i]=-loss(X,y,par,hyper)/float(y.shape[0])
+        if verbose and (i%(epochs/10)==0):
+            print('loss: {0:.4f}'.format(loss_val[i]) )
+    return par,loss_val
+
+def predict_stochastic(X,par,prob=False,p=0.5):
+    Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
+    X_t=np.multiply(X,Z)   
+    yhat=net(X_t,par)
+    if prob:
+        out=yhat
+    else:
+        out=pred
+    return out	
+
 
 def check_gradient(X, y, par,hyper,dh=0.00001):
     grad_a=grad(X,y,par,hyper)

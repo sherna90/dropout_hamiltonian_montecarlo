@@ -19,7 +19,7 @@ K=len(centers)
 X, y = make_blobs(n_samples=1000, centers=centers, cluster_std=1,random_state=40)
 y=utils.one_hot(y,K)
 X = (X - X.mean(axis=0)) / X.std(axis=0)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 alpha=1./10.
 start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
