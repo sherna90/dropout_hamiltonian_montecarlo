@@ -17,7 +17,7 @@ import hamiltonian.utils as utils
 eta=1e-5
 epochs=50
 batch_size=50
-alpha=1./4.
+alpha=1./100.
 data_path = 'data/'
 
 mnist_train=h5py.File('data/mnist_train.h5','r')
