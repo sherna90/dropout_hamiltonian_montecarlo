@@ -19,8 +19,8 @@ import hamiltonian.utils as utils
 
 path_length=10
 epochs=20
-batch_size=200
-alpha=1./4.
+batch_size=1000
+alpha=1./10.
 data_path = 'data/'
 
 mnist_train=h5py.File('data/mnist_train.h5','r')
@@ -36,15 +36,15 @@ y_test=mnist_test['y_test']
 
 classes=np.unique(y_train)
 D=X_train.shape[1]
-num_classes=len(classes)
-y_train=utils.one_hot(y_train[:],num_classes)
-y_test=utils.one_hot(y_test[:],num_classes)
-start_p={'weights':np.random.randn(D,num_classes),
-        'bias':np.random.randn(num_classes)}
+K=len(classes)
+y_train=utils.one_hot(y_train[:],K)
+y_test=utils.one_hot(y_test[:],K)
+start_p={'weights':np.zeros((D,K)),
+        'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 mcmc=sampler.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size=batch_size)
+posterior_sample,logp_samples=mcmc.sample(1e2,1e1,batch_size=batch_size)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

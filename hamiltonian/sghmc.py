@@ -18,13 +18,16 @@ class SGHMC(HMC):
 
     def step(self,X_batch,y_batch,state,momemtum,rng):
         #n_steps = max(1, int(self.path_length / self.step_size))
-        n_steps=5
+        n_steps=1
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
         q = state.copy()
         p = self.draw_momentum(rng)
         q_new = deepcopy(q)
         p_new = deepcopy(p)
+        #n_x,n_y=X_batch.shape
+        #Z=np.random.binomial(1,0.5,n_x*n_y).reshape((n_x,n_y))
+        #X_batch_dropout=np.multiply(X_batch,Z)
         for i in range(n_steps):
             q_new, p_new = self.leapfrog(q_new,p_new, epsilon,X_batch,y_batch,rng)
         acceptprob=self.accept(q, q_new, p, p_new)
@@ -60,11 +63,13 @@ class SGHMC(HMC):
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
         for i in tqdm(range(burnin),total=burnin):
-            for batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                X_batch, y_batch = batch
+            j=0
+            for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
                 q,p,a=self.step(X_batch,y_batch,q,p,rng)
                 burnin_samples.append(q)
                 accepted.append(a)
+        if self._verbose:
+            print('burn-in acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))  
         del accepted[:]
         del burnin_samples[:]
         for i in tqdm(range(int(niter)),total=int(niter)):
@@ -74,7 +79,7 @@ class SGHMC(HMC):
                 samples.append(q)
                 accepted.append(a)
                 logp_samples.append(self.logp(X_batch,y_batch,q,self.hyper))
-            if self._verbose and (i%(niter/10)==0):
+            if self._verbose:
                 print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))        
         posterior={var:[] for var in self.start.keys()}
         for s in samples:

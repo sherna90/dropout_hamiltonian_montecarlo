@@ -42,7 +42,7 @@ class HMC:
 
     def step(self,state,momentum,rng):
         #n_steps =max(1, int(self.path_length / self.step_size))
-        n_steps=2
+        n_steps=5
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
         q = state.copy()

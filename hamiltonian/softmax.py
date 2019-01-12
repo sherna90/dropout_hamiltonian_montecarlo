@@ -84,7 +84,6 @@ def predict(X,par,prob=False):
 
 def sgd_dropout(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=True,p=0.5):
     loss_val=np.zeros((np.int(epochs)))
-    dim=par['weights'].shape[0]
     momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
     gamma=0.9
     for i in range(int(epochs)):
@@ -103,13 +102,14 @@ def sgd_dropout(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,v
     return par,loss_val
 
 def predict_stochastic(X,par,prob=False,p=0.5):
+    n_x,n_y=X.shape
     Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
     X_t=np.multiply(X,Z)   
     yhat=net(X_t,par)
     if prob:
         out=yhat
     else:
-        out=pred
+        out=yhat.argmax(axis=1)
     return out	
 
 
