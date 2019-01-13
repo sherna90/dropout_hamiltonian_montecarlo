@@ -61,12 +61,14 @@ def sgd(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=T
     loss_val=np.zeros((np.int(epochs)))
     momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
     gamma=0.9
+    n_data=np.float(y.shape[0])
     for i in range(np.int(epochs)):
         for batch in iterate_minibatches(X, y, batch_size):
             X_batch, y_batch = batch
+            n_batch=np.float(y_batch.shape[0])
             grad_p=grad(X_batch,y_batch,par,hyper)
             for var in par.keys():
-                momemtum[var] = gamma * momemtum[var] + eta * grad_p[var]/y_batch.shape[0]
+                momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                 par[var]+=momemtum[var]
         loss_val[i]=-loss(X,y,par,hyper)/float(y.shape[0])
         if verbose and (i%(epochs/10)==0):
@@ -86,6 +88,7 @@ def sgd_dropout(X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,v
     loss_val=np.zeros((np.int(epochs)))
     momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
     gamma=0.9
+    n_data=y.shape[0]
     for i in range(int(epochs)):
         for batch in iterate_minibatches(X, y, batch_size):
             X_batch, y_batch = batch
