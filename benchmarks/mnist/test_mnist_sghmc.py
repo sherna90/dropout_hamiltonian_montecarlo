@@ -14,7 +14,7 @@ import h5py
 
 sys.path.append("./") 
 import hamiltonian.softmax as softmax
-import hamiltonian.sghmc as sampler
+import hamiltonian.sgld as sampler
 import hamiltonian.utils as utils
 
 path_length=10
@@ -42,9 +42,9 @@ y_test=utils.one_hot(y_test[:],K)
 start_p={'weights':np.zeros((D,K)),
         'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-mcmc=sampler.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
+mcmc=sampler.SGLD(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.sample(1e2,1e1,batch_size=batch_size)
+posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size=batch_size,backend=None,ncores=4)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
@@ -52,7 +52,8 @@ post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) 
 y_pred=softmax.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
-
+plt.hist(logp_samples)
+plt.show()
 #b_cols=columns=['b1', 'b2','b3']
 #w_cols=[]
 #for i in range(1,13):
