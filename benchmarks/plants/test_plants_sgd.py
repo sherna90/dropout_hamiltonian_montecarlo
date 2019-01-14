@@ -20,32 +20,54 @@ batch_size=250
 alpha=1e-2
 data_path = 'data/'
 
-plants_train=h5py.File(data_path+'train_features_labels.h5','r')
+plants_train=h5py.File('data/train_features_labels.h5','r')
 X_train=plants_train['train_features']
 y_train=plants_train['train_labels']
-plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
+plants_test=h5py.File('data/validation_features_labels.h5','r')
 X_test=plants_test['validation_features']
 y_test=plants_test['validation_labels']
 
 classes=np.unique(y_train)
-
-dim_data=X_train.shape[1]
-num_classes=38
+D=X_train.shape[1]
+K=y_train.shape[1]
 import time
 
-start_time=time.time()
-start_p={'weights':np.random.randn(dim_data,num_classes),
-    'bias':np.random.randn(num_classes)}
-
+start_p={'weights':np.zeros((D,K)),
+        'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-par,loss=softmax.sgd_dropout(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
+
+start_time=time.time()
+par_sgd,loss_sgd=softmax.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
 elapsed_time=time.time()-start_time 
-print(elapsed_time)
-y_pred=softmax.predict(X_test,par)
-y_test_c=np.argmax(y_test[:],axis=1)
-cnf_matrix=confusion_matrix(y_test_c, y_pred)
-print(classification_report(y_test_c, y_pred))
-print(cnf_matrix)
+print('SGD, time:',elapsed_time)
+y_pred=softmax.predict(X_test,par_sgd)
+cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
+print(classification_report(y_test[:].argmax(axis=1), y_pred))
+print "-----------------------------------------------------------"
+start_time=time.time()
+par_sgd_dropout_05,loss_sgd_dropout_05=softmax.sgd_dropout(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
+elapsed_time=time.time()-start_time 
+print('SGD Dropout 0.5, time:',elapsed_time)
+y_pred=softmax.predict(X_test,par_sgd_dropout_05)
+cnf_matrix_dropout_05=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
+print(classification_report(y_test[:].argmax(axis=1), y_pred))
+print "-----------------------------------------------------------"
+start_time=time.time()
+par_sgd_dropout_01,loss_sgd_dropout_01=softmax.sgd_dropout(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0,p=0.1)
+elapsed_time=time.time()-start_time 
+print('SGD Dropout 0.1, time:',elapsed_time)
+y_pred=softmax.predict(X_test,par_sgd_dropout_01)
+cnf_matrix_dropout_01=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
+print(classification_report(y_test[:].argmax(axis=1), y_pred))
+print "-----------------------------------------------------------"
+start_time=time.time()
+par_sgd_dropout_09,loss_sgd_dropout_09=softmax.sgd_dropout(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0,p=0.9)
+elapsed_time=time.time()-start_time 
+print('SGD Dropout 0.9, time:',elapsed_time)
+y_pred=softmax.predict(X_test,par_sgd_dropout_09)
+cnf_matrix_dropout_09=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
+print(classification_report(y_test[:].argmax(axis=1), y_pred))
+print "-----------------------------------------------------------"
 
 import matplotlib.pyplot as plt 
 import seaborn as sns
@@ -54,16 +76,13 @@ import itertools
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+                          cmap=plt.cm.gray_r):
     """
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -81,17 +100,36 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
 
 plt.figure()
-plot_confusion_matrix(cnf_matrix, classes=np.int32(classes),title='Confusion matrix')
-plt.savefig('plants_confusion_matrix.pdf',bbox_inches='tight')
+plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(classes),title='SGD')
+plt.savefig('plants_confusion_matrix_sgd.pdf',bbox_inches='tight')
+plt.close()
+
+plt.figure()
+plot_confusion_matrix(cnf_matrix_dropout_05, classes=np.int32(classes),title='Dropout $p=0.5$')
+plt.savefig('plants_confusion_matrix_dropout_05.pdf',bbox_inches='tight')
+plt.close()
+
+plt.figure()
+plot_confusion_matrix(cnf_matrix_dropout_01, classes=np.int32(classes),title='Dropout $p=0.1$')
+plt.savefig('plants_confusion_matrix_dropout_01.pdf',bbox_inches='tight')
+plt.close()
+
+plt.figure()
+plot_confusion_matrix(cnf_matrix_dropout_09, classes=np.int32(classes),title='Dropout $p=0.9$')
+plt.savefig('plants_confusion_matrix_dropout_09.pdf',bbox_inches='tight')
 plt.close()
 
 sns.set()
 plt.figure()
-plt.plot(range(epochs),loss)
+plt.plot(range(epochs),loss_sgd,'-',label='SGD')
+plt.plot(range(epochs),loss_sgd_dropout_09,':',label='Dropout $p=0.9$')
+plt.plot(range(epochs),loss_sgd_dropout_05,'.-',label='Dropout $p=0.5$')
+plt.plot(range(epochs),loss_sgd_dropout_01,'--',label='Dropout $p=0.1$')
 #plt.title('Training loss')
 plt.ylabel('log-loss')
 plt.xlabel('epochs')
-plt.savefig('plants_fine_tuning.pdf',bbox_inches='tight',dpi=100)
+plt.legend(loc='best')
+plt.savefig('plants_fine_tuning.pdf',bbox_inches='tight')
 plt.close()
 
 
