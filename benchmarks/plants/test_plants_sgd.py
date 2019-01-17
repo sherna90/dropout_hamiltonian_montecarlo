@@ -95,7 +95,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
     plt.tight_layout()
 
-np.savez("sgd_plants.npz",par_sgd=par_sgd,par_sgd_dropout_05=par_sgd_dropout_05,par_sgd_dropout_01=par_sgd_dropout_01,par_sgd_dropout_09=par_sgd_dropout_09)
+np.savez("results/sgd_plants.npz",par_sgd=par_sgd,par_sgd_dropout_05=par_sgd_dropout_05,par_sgd_dropout_01=par_sgd_dropout_01,par_sgd_dropout_09=par_sgd_dropout_09)
 
 plt.figure()
 plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(classes),title='SGD')
