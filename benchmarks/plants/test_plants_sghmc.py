@@ -30,19 +30,6 @@ plants_test=h5py.File('data/validation_features_labels.h5','r')
 X_test=plants_test['validation_features']
 y_test=plants_test['validation_labels']
 
-eta=1e-2
-epochs=100
-batch_size=250
-alpha=1e-2
-data_path = 'data/'
-
-plants_train=h5py.File('data/train_features_labels.h5','r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
-plants_test=h5py.File('data/validation_features_labels.h5','r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
-
 classes=np.unique(y_train)
 D=X_train.shape[1]
 K=y_train.shape[1]
@@ -54,16 +41,18 @@ hyper_p={'alpha':alpha}
 
 mcmc=sampler.SGLD(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.multicore_sample(1e1,1e1,batch_size=batch_size,backend=None,ncores=4)
+posterior_sample,logp_samples=mcmc.sample(1e1,1e1,batch_size=batch_size)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
-np.savez("sgmcmc_plants.npz",posterior_sample=posterior_sample)
+import pickle
+outfile=open('results/sgmcmc_plants.pkl','wb')
+pickle.dump(posterior_sample,outfile)
 
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 y_pred=softmax.predict(X_test,post_par)
-print(classification_report(y_test.argmax(axis=1), y_pred))
-print(confusion_matrix(y_test.argmax(axis=1), y_pred))
+print(classification_report(y_test[:].argmax(axis=1), y_pred))
+print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
 
 plants_train.close()
 plants_test.close()
