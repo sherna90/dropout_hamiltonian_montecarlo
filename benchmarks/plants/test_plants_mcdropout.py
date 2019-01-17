@@ -28,30 +28,37 @@ par_sgd.update({0.1:npz['par_sgd_dropout_01'][()]})
 par_sgd.update({0.9:npz['par_sgd_dropout_09'][()]})
 
 predictive_accuracy={k:[] for k in par_sgd.keys()}
-for k in range(n_samples):
-    for p,par in par_sgd.iteritems():
+ellapsed_time={}
+for p,par in par_sgd.iteritems():
+    t0=time.clock()
+    for k in range(n_samples):
         y_pred=softmax.predict_stochastic(X_test,par,p=p)
         acc=np.sum(y_test[:].argmax(axis=1)==y_pred)/np.float(len(y_pred))
         predictive_accuracy[p].append(acc)
+    t1=time.clock()
+    eps=t1-t0
+    ellapsed_time[p]=eps
+    print("MC dropout Ellapsed Time : ",eps)
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 
 sns.set()
 
-import pickle
-infile=open('results/sgmcmc_plants.pkl','rb')
-posterior_sample=pickle.load(infile)
+posterior_sample=h5py.File('results/sgmcmc_plants.h5','r')
 mcmc_samples=posterior_sample['weights'].shape[0]
 hyper_p={'alpha':1e-2}
 predictive_accuracy={'sgld':[]}
 
-for i in range(mcmc_samples):
-    par={'weights':posterior_sample['weights'][i,:].reshape((D,K)),'bias':posterior_sample['bias'][i,:]}
+t0=time.clock()
+for i in range(1,mcmc_samples):
+    par={'weights':posterior_sample['weights'][i,:],'bias':posterior_sample['bias'][i,:]}
     y_pred=softmax.predict(X_test,par)
     acc=np.sum(y_test[:].argmax(axis=1)==y_pred)/np.float(len(y_pred))
     predictive_accuracy['sgld'].append(acc)
-
+eps=t1-t0
+ellapsed_time['sgld']=eps
+print("SGLD Ellapsed Time : ",eps)
 
 for p in predictive_accuracy.keys():
     m=np.mean(predictive_accuracy[p])
@@ -62,6 +69,6 @@ for p in predictive_accuracy.keys():
     plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
     plt.close()
 
-np.savez("results/bayesian_plants.npz",predictive_accuracy=predictive_accuracy)
+np.savez("results/results_bayesian_plants.npz",predictive_accuracy=predictive_accuracy,ellapsed_time=ellapsed_time)
 
 plants_test.close()
