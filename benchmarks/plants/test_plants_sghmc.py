@@ -41,15 +41,11 @@ hyper_p={'alpha':alpha}
 
 mcmc=sampler.SGLD(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.sample(1e1,1e1,batch_size=batch_size)
+posterior_sample,logp_samples=mcmc.sample(1e2,1e2,batch_size=batch_size,backend='results/sgmcmc_plants.h5')
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
-import pickle
-outfile=open('results/sgmcmc_plants.pkl','wb')
-pickle.dump(posterior_sample,outfile)
-
-post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+post_par={var:np.mean(posterior_sample[var],axis=0) for var in posterior_sample.keys()}
 y_pred=softmax.predict(X_test,post_par)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
 print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))

@@ -17,8 +17,7 @@ def unwrap_self_sgmcmc(arg, **kwarg):
 class SGLD(HMC):
 
     def step(self,X_batch,y_batch,state,rng):
-        q = state.copy()
-        q_new = deepcopy(q)
+        q_new = deepcopy(state)
         n_data=np.float(self.y.shape[0])
         epsilon={var:self.step_size/n_data for var in self.start.keys()}
         #n_x,n_y=X_batch.shape
@@ -49,23 +48,35 @@ class SGLD(HMC):
         burnin=int(burnin)
         q=self.start
         n_data=np.float(self.y.shape[0])
+        if backend:
+            backend_samples=h5py.File(backend)
+            posterior={}
+            for var in self.start.keys():
+                param_shape=self.start[var].shape
+                posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
         for i in tqdm(range(burnin),total=burnin):
             for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
                 q=self.step(X_batch,y_batch,q,rng)
-                burnin_samples.append(q)
-        del burnin_samples[:]
         for i in tqdm(range(int(niter)),total=int(niter)):
             for batch in self.iterate_minibatches(self.X, self.y, batch_size):
                 X_batch, y_batch = batch
                 q=self.step(X_batch,y_batch,q,rng)
-                samples.append(q)
+                if not backend:
+                    samples.append(q)
+                else:
+                    for var in self.start.keys():
+                        param_shape=self.start[var].shape
+                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
+                        posterior[var][-1,:]=q[var]
+                    backend_samples.flush()
                 logp_samples.append(self.logp(X_batch,y_batch,q,self.hyper))
-        posterior={var:[] for var in self.start.keys()}
-        for s in samples:
+        if not backend:
+            posterior={var:[] for var in self.start.keys()}
+            for s in samples:
+                for var in self.start.keys():
+                    posterior[var].append(s[var].reshape(-1))
             for var in self.start.keys():
-                posterior[var].append(s[var].reshape(-1))
-        for var in self.start.keys():
-            posterior[var]=np.array(posterior[var])
+                posterior[var]=np.array(posterior[var])
         return posterior,np.array(logp_samples) 
             
     def iterate_minibatches(self,X, y, batchsize):
