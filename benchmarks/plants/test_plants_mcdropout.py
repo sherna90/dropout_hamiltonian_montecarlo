@@ -56,19 +56,21 @@ for i in range(1,mcmc_samples):
     y_pred=softmax.predict(X_test,par)
     acc=np.sum(y_test[:].argmax(axis=1)==y_pred)/np.float(len(y_pred))
     predictive_accuracy['sgld'].append(acc)
+t1=time.clock()
 eps=t1-t0
 ellapsed_time['sgld']=eps
 print("SGLD Ellapsed Time : ",eps)
 
+np.savez("results/results_bayesian_plants.npz",predictive_accuracy=predictive_accuracy,ellapsed_time=ellapsed_time)
+
 for p in predictive_accuracy.keys():
     m=np.mean(predictive_accuracy[p])
     v=np.var(predictive_accuracy[p])
-    print('Method {0:01.2f}, mean accuracy : {1:01.2f}, var accuracy : {2:01.2f}'.format(p,m,v))
+    print('Method :'+str(p)+', mean : '+str(m)+', var:'+str(v))
     plt.hist(predictive_accuracy[p])
     plt.xlabel('accuracy')
     plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
     plt.close()
 
-np.savez("results/results_bayesian_plants.npz",predictive_accuracy=predictive_accuracy,ellapsed_time=ellapsed_time)
 
 plants_test.close()
