@@ -19,7 +19,7 @@ X_test=plants_test['validation_features']
 y_test=plants_test['validation_labels']
 D=X_test.shape[1]
 K=y_test.shape[1]
-n_samples=10
+n_samples=1000
 
 npz=np.load("results/sgd_plants.npz")
 par_sgd={}
@@ -48,7 +48,7 @@ sns.set()
 posterior_sample=h5py.File('results/sgmcmc_plants.h5','r')
 mcmc_samples=posterior_sample['weights'].shape[0]
 hyper_p={'alpha':1e-2}
-predictive_accuracy={'sgld':[]}
+predictive_accuracy.update({'sgld':[]})
 
 t0=time.clock()
 for i in range(1,mcmc_samples):
@@ -63,14 +63,15 @@ print("SGLD Ellapsed Time : ",eps)
 
 np.savez("results/results_bayesian_plants.npz",predictive_accuracy=predictive_accuracy,ellapsed_time=ellapsed_time)
 
-for p in predictive_accuracy.keys():
-    m=np.mean(predictive_accuracy[p])
-    v=np.var(predictive_accuracy[p])
-    print('Method :'+str(p)+', mean : '+str(m)+', var:'+str(v))
-    plt.hist(predictive_accuracy[p])
-    plt.xlabel('accuracy')
-    plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
-    plt.close()
+if False:
+    for p in predictive_accuracy.keys():
+        m=np.mean(predictive_accuracy[p])
+        v=np.var(predictive_accuracy[p])
+        print('Method :'+str(p)+', mean : '+str(m)+', var:'+str(v))
+        plt.hist(predictive_accuracy[p])
+        plt.xlabel('accuracy')
+        plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
+        #plt.close()
 
 
 plants_test.close()
