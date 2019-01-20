@@ -1,27 +1,4 @@
-('MC dropout Ellapsed Time : ', 184.53)
-('MC dropout Ellapsed Time : ', 169.02)
-('MC dropout Ellapsed Time : ', 165.11999999999995)
-('SGLD Ellapsed Time : ', 42423.1)
-Method :sgld, mean : 0.9467859332770722, var:1.6759470513097146e-05
-Traceback (most recent call last):
-  File "benchmarks/plants/test_plants_mcdropout.py", line 70, in <module>
-    plt.hist(predictive_accuracy[p])
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/pyplot.py", line 3010, in hist
-    ax = gca()
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/pyplot.py", line 962, in gca
-    return gcf().gca(**kwargs)
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/pyplot.py", line 592, in gcf
-    return figure()
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/pyplot.py", line 539, in figure
-    **kwargs)
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/backend_bases.py", line 171, in new_figure_manager
-    return cls.new_figure_manager_given_figure(num, fig)
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/backend_bases.py", line 177, in new_figure_manager_given_figure
-    canvas = cls.FigureCanvas(figure)
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/backends/backend_qt5agg.py", line 35, in __init__
-    super(FigureCanvasQTAggBase, self).__init__(figure=figure)
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/backends/backend_qt5.py", line 235, in __init__
-    _create_qApp()
-  File "/usr/local/anaconda2/lib/python2.7/site-packages/matplotlib/backends/backend_qt5.py", line 122, in _create_qApp
-    raise RuntimeError('Invalid DISPLAY variable')
-RuntimeError: Invalid DISPLAY variable
+('MC dropout Ellapsed Time : ', 20585.29)
+('MC dropout Ellapsed Time : ', 14611.329999999998)
+('MC dropout Ellapsed Time : ', 14361.36)
+('SGLD Ellapsed Time : ', 41960.68)
