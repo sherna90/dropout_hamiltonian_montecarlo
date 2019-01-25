@@ -15,7 +15,7 @@ if use_gpu:
 else:
     import hamiltonian.softmax as softmax
 
-plants_features=h5py.File('data/grape_esca_train.h5','r')
+plants_features=h5py.File('data/grape_esca_domain.h5','r')
 
 npz=np.load("results/sgd_plants.npz")
 par_sgd={}
@@ -63,15 +63,15 @@ print("SGLD Ellapsed Time : ",eps)
 
 np.savez("results/results_domian_plants.npz",predictive_accuracy=predictive_accuracy,class_prob=class_prob)
 
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set_style("whitegrid")
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+#sns.set_style("whitegrid")
 
-for m in class_prob.keys():
-    fig = plt.figure()
-    df_prob=pd.DataFrame(np.vstack(np.log(class_prob[m])))
-    sns.boxplot(data=df_prob,orient="h",fliersize=0.5)
-    plt.savefig('domain_adaption_'+str(m).replace('.','')+'.pdf',bbox_inches='tight',dpi=200)
+#for m in class_prob.keys():
+#    fig = plt.figure()
+#    df_prob=pd.DataFrame(np.vstack(np.log(class_prob[m])))
+#    sns.boxplot(data=df_prob,orient="h",fliersize=0.5)
+#    plt.savefig('domain_adaption_'+str(m).replace('.','')+'.pdf',bbox_inches='tight',dpi=200)
     
-
+posterior_sample.close()
 plants_features.close()
