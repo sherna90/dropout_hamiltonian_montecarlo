@@ -63,15 +63,15 @@ print("SGLD Ellapsed Time : ",eps)
 
 np.savez("results/results_bayesian_plants.npz",predictive_accuracy=predictive_accuracy,ellapsed_time=ellapsed_time)
 
-if False:
-    for p in predictive_accuracy.keys():
-        m=np.mean(predictive_accuracy[p])
-        v=np.var(predictive_accuracy[p])
-        print('Method :'+str(p)+', mean : '+str(m)+', var:'+str(v))
-        plt.hist(predictive_accuracy[p])
-        plt.xlabel('accuracy')
-        plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
-        #plt.close()
+for p in predictive_accuracy.keys():
+    m=np.mean(predictive_accuracy[p])
+    v=np.var(predictive_accuracy[p])
+    print('Method :'+str(p)+', mean : '+str(m)+', var:'+str(v))
+    fig = plt.figure()
+    h=plt.hist(predictive_accuracy[p])
+    plt.xlabel('accuracy')
+    plt.ylabel('frequency')
+    plt.savefig('accuracy_bayesian_'+str(p)+'.pdf',bbox_inches='tight')
 
 
 plants_test.close()
