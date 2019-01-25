@@ -42,7 +42,7 @@ for p,par in par_sgd.iteritems():
     ellapsed_time[p]=eps
     print("MC dropout Ellapsed Time : ",eps)
 
-posterior_sample=h5py.File('results/sgmcmc_plants.h5','r')
+posterior_sample=h5py.File('results/sgmcmc_plants_1000.h5','r')
 mcmc_samples=posterior_sample['weights'].shape[0]
 hyper_p={'alpha':1e-2}
 predictive_accuracy.update({'sgld':[]})
@@ -60,6 +60,8 @@ t1=time.clock()
 eps=t1-t0
 ellapsed_time['sgld']=eps
 print("SGLD Ellapsed Time : ",eps)
+
+np.savez("results/results_domian_plants.npz",predictive_accuracy=predictive_accuracy,class_prob=class_prob)
 
 import matplotlib.pyplot as plt
 import seaborn as sns
