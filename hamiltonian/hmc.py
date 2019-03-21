@@ -10,9 +10,14 @@ import h5py
 import os 
 from scipy.optimize import check_grad
 import math 
+import time
+import os
 
 def unwrap_self_mcmc(arg, **kwarg):
     return HMC.sample(*arg, **kwarg)
+
+def unwrap_self_mean(arg, **kwarg):
+    return HMC.sample_mean(*arg, **kwarg)
 
 
 class HMC:
@@ -121,55 +126,59 @@ class HMC:
 
 
     def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
-        samples=[]
-        burnin_samples=[]
-        accepted=[]
-        if rng==None:
-            rng = np.random.RandomState()
+
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
+
         for i in tqdm(range(int(burnin))):
             q,p,a=self.step(q,p,rng)
-            burnin_samples.append(q)
-            accepted.append(a)
-        #acc_rate=self.acceptance_rate(accepted)
-        #print('burnin acceptance rate : {0:.4f}'.format(acc_rate))
-        del accepted[:]
-        del burnin_samples[:]
-        for i in tqdm(range(int(niter))):
-            q,p,a=self.step(q,p,rng)
-            accepted.append(a)
-            samples.append(q)
-            if self._verbose and (i%(niter/10)==0):
-                print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)) )
-        posterior={var:[] for var in self.start.keys()}
-        logp_samples=np.zeros(len(samples))
-        i=0
-        for s in samples:
-            logp_samples[i]=self.logp(self.X,self.y,s,self.hyper)
-            i=i+1
+
+        logp_samples=np.zeros(niter)
+        if backend:
+            backend_samples=h5py.File(backend)
+            posterior={}
             for var in self.start.keys():
-                posterior[var].append(s[var].reshape(-1))
-        for var in self.start.keys():
-            posterior[var]=np.array(posterior[var])
-        #else:
-        #    posterior=h5py.File(backend,'w')
-        #    num_samples=int(niter)
-        #    dset = {var:posterior.create_dataset(var, (num_samples,self.start[var].reshape(-1).shape[0]), maxshape=(None,self.start[var].reshape(-1).shape[0]) ) for var in self.start.keys()}
-        #    for i in tqdm(range(int(niter)),total=int(niter)):
-        #        q,p=self.step(q,p)
-        #        for var in self.start.keys():
-        #            dset[var][-1,:]=q[var].reshape(-1)
-        #    posterior.flush()
-        return posterior,logp_samples
+                param_shape=self.start[var].shape
+                posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
+            for i in tqdm(range(int(niter))):
+                q,p,a=self.step(q,p,rng)
+                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
+                for var in self.start.keys():
+                    param_shape=self.start[var].shape
+                    posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
+                    posterior[var][-1,:]=q[var]
+                backend_samples.flush()
+            backend_samples.close()
+            return 1, logp_samples
+        else:
+            posterior={var:[] for var in self.start.keys()}
+            for i in tqdm(range(int(niter))):
+                q,p,a=self.step(q,p,rng)
+                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
+                for var in self.start.keys():
+                    posterior[var].append(q[var].reshape(-1))
+            for var in self.start.keys():
+                posterior[var]=np.array(posterior[var])
+            return posterior, logp_samples
 
     def multicore_sample(self,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
-        pool = Pool(processes=ncores)
+        if backend:
+            multi_backend = [backend+"_%i" %i for i in range(ncores)]
+        else:
+            multi_backend = [backend]*ncores
+    
         rng = [np.random.RandomState(i) for i in range(ncores)]
-        results=pool.map(unwrap_self_mcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,[backend]*ncores,rng))
-        posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-        logp_samples=np.concatenate([r[1] for r in results],axis=0)
-        return posterior,logp_samples
+
+        pool = Pool(processes=ncores)
+        results=pool.map(unwrap_self_mcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
+        
+        if not backend:
+            posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
+            logp_samples=np.concatenate([r[1] for r in results],axis=0)
+            return posterior,logp_samples
+        else:
+            logp_samples=np.concatenate([r[1] for r in results],axis=0)
+            return multi_backend,logp_samples
 
     def compute_mass_matrix(self,samples,alpha=0.9):
         posterior={var:[] for var in self.start.keys()}
@@ -199,3 +208,15 @@ class HMC:
             q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
             acceptprob=self.accept(q, q_new, p, p_new)
         print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
+
+    def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
+        pool = Pool(processes=ncores)
+        results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
+        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(start_p[var].shape))/niter) for var in self.start.keys()}
+        return aux
+
+    def sample_mean(self, filename):
+        f=h5py.File(filename)
+        aux = {var:np.sum(f[var],axis=0) for var in f.keys()}
+        return aux
+        
