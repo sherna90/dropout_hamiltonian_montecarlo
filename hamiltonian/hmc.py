@@ -12,12 +12,16 @@ from scipy.optimize import check_grad
 import math 
 import time
 import os
+import cupy as cp
 
 def unwrap_self_mcmc(arg, **kwarg):
     return HMC.sample(*arg, **kwarg)
 
 def unwrap_self_mean(arg, **kwarg):
     return HMC.sample_mean(*arg, **kwarg)
+
+def unwrap_self_mean_gpu(arg, **kwarg):
+    return HMC.sample_mean_gpu(*arg, **kwarg)
 
 
 class HMC:
@@ -163,7 +167,7 @@ class HMC:
 
     def multicore_sample(self,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
         if backend:
-            multi_backend = [backend+"_%i" %i for i in range(ncores)]
+            multi_backend = [backend+"_%i.h5" %i for i in range(ncores)]
         else:
             multi_backend = [backend]*ncores
     
@@ -212,11 +216,30 @@ class HMC:
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
         pool = Pool(processes=ncores)
         results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
-        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(start_p[var].shape))/niter) for var in self.start.keys()}
+        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return aux
+
+    def multicore_mean_gpu(self, multi_backend, niter, ncores=cpu_count()):
+        pool = Pool(processes=ncores)
+        results= pool.map(unwrap_self_mean_gpu, zip([self]*ncores, multi_backend))
+
+        aux = {var:cp.concatenate((r[var] for r in results), axis=0) for var in self.start.keys()}
+        
+        #aux = {var:cp.sum(cp.concatenate(r[var] for r in results), axis=0)/niter for var in self.start.keys()}
+        return 1
 
     def sample_mean(self, filename):
         f=h5py.File(filename)
         aux = {var:np.sum(f[var],axis=0) for var in f.keys()}
         return aux
+
+    def sample_mean_gpu(self, filename):
+        f=h5py.File(filename)
+        aux = {var:cp.sum(cp.asarray(f[var]),axis=0) for var in f.keys()}
+        return aux
+
+    def estadistics_ram_gpu(self, posterior_sample):
+        par_mean={var:cp.mean(cp.asarray(posterior_sample[var]),axis=0) for var in posterior_sample.keys()}
+        par_var={var:cp.var(cp.asarray(posterior_sample[var]),axis=0) for var in posterior_sample.keys()}
+        return par_mean, par_var
         
