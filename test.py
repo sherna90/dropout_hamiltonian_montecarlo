@@ -14,7 +14,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
  
 import sys
 sys.path.append("../") 
-import hamiltonian.logistic as logistic
 import numpy as np
 import time
 
@@ -25,13 +24,12 @@ start_p={'weights':np.zeros(D),'bias':np.zeros(1)}
 hyper_p={'alpha':alpha}
 
 if gpu:
+    import hamiltonian.logistic_gpu as logistic
     star = time.time()
-    par,loss=logistic.sgd_gpu(X_train,y_train,start_p,hyper_p,eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+    par,loss=logistic.sgd(X_train,y_train,start_p,hyper_p,eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
     print time.time() - star
-    print par
-    print loss
-    time.sleep(100)
 else:
+    import hamiltonian.logistic as logistic
     star = time.time()
     par,loss=logistic.sgd(X_train,y_train,start_p,hyper_p,eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
     print time.time() - star
