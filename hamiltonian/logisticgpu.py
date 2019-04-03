@@ -31,8 +31,10 @@ class LOGISTIC:
                 #HASTA AQUI 6.2 SEGUNDOS #
             aux = time.time()
             loss_val[i]=-self.loss(X_batch,y_batch)/float(batch_size)
+            '''
             if verbose and (i%(epochs/10)==0):
                 print('iteration {} , loss: {}'.format(i,loss_val[i]))
+            '''
         return self.start_p, loss_val
 
     def iterate_minibatches(self, batchsize):

@@ -17,7 +17,7 @@ sys.path.append("../")
 import numpy as np
 import time
 
-gpu = False
+gpu = True
 alpha=1./4.
 
 if gpu:
