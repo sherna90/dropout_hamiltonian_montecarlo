@@ -28,8 +28,11 @@ class LOGISTIC:
                     self.start_p[var]+=momemtum[var]
             aux = time.time()
             loss_val[i]=-self.loss(X_batch,y_batch)/float(batch_size)
+            '''
             if verbose and (i%(epochs/10)==0):
                 print('iteration {} , loss: {}'.format(i,loss_val[i]))
+                print self.start_p['weights'].shape
+            '''
         return self.start_p, loss_val
 
     def iterate_minibatches(self, batchsize):
@@ -73,6 +76,6 @@ class LOGISTIC:
         return -np.log(1.0 + np.exp(y_linear)) + y*y_linear
 
     def predict(self, X):
-        yhat = self.net(np.asarray(X))
+        yhat = self.net(X)
         pred = 1 * np.array( yhat > 0.5)
         return pred

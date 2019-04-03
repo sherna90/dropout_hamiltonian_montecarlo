@@ -24,6 +24,8 @@ def sigmoid(y_linear):
     return 1.0 / norms
 
 def net(X,par):
+    print par['weights'].shape
+    print par['bias'].shape
     y_linear = np.dot(X, par['weights']) + par['bias']
     yhat = sigmoid(y_linear)
     return yhat
@@ -69,6 +71,8 @@ def sgd(X, y, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
         loss_val[i]=-loss(X_batch,y_batch,par,hyper)/float(batch_size)
         if verbose and (i%(epochs/10)==0):
             print('iteration {0:5d} , loss: {1:.4f}'.format(i,loss_val[i]) )
+            print par['weights'].shape
+            print par['bias'].shape
     return par,loss_val
 
 def predict(X,par):
