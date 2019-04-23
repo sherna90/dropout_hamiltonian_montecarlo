@@ -1,6 +1,25 @@
+import cupy as cp
 import numpy as np
+import time as t
 
-b = {'weights': array([array(0.48352801), array(0.02109522)], dtype=object), 'bias': array([array(-0.07445975)], dtype=object)}
+a = np.arange(10000)
+b = 2
+a2 = cp.asarray(a)
+b2 = cp.asarray(2)
 
-for var in b.keys():
-    print(b['weights'])
+aux = t.time()
+np.dot(a,b)
+np.sum(a)
+print("CPU: ", t.time()-aux)
+
+
+aux = t.time()
+cp.dot(a2,b2)
+cp.sum(a2)
+print("GPU con asarray: ",t.time()-aux)
+
+
+aux = t.time()
+cp.dot(a,b)
+cp.sum(a)
+print("GPU con cpu", t.time()-aux)
