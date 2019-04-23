@@ -3,14 +3,12 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import numpy as np
-import cupy as cp
 from utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
 
 def cross_entropy(y_linear, y):
-    #return y*np.log(sigmoid(y_linear))+(1-y)*np.log((1-sigmoid(y_linear)))
     return -np.log(1.0+np.exp(y_linear)) + y*y_linear
 
 def log_prior(par,hyper):
@@ -24,8 +22,6 @@ def sigmoid(y_linear):
     return 1.0 / norms
 
 def net(X,par):
-    print par['weights'].shape
-    print par['bias'].shape
     y_linear = np.dot(X, par['weights']) + par['bias']
     yhat = sigmoid(y_linear)
     return yhat
@@ -48,7 +44,6 @@ def log_likelihood(X, y, par,hyper):
     return ll
     
 def loss(X, y, par,hyper):
-    #return log_likelihood(X, y, par,hyper)+log_prior(par,hyper)
     return log_likelihood(X, y, par,hyper)
 
 def iterate_minibatches(X, y, batchsize):
@@ -71,8 +66,6 @@ def sgd(X, y, par,hyper,eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
         loss_val[i]=-loss(X_batch,y_batch,par,hyper)/float(batch_size)
         if verbose and (i%(epochs/10)==0):
             print('iteration {0:5d} , loss: {1:.4f}'.format(i,loss_val[i]) )
-            print par['weights'].shape
-            print par['bias'].shape
     return par,loss_val
 
 def predict(X,par):
@@ -96,4 +89,3 @@ def check_gradient(X, y, par,hyper,dh=0.00001):
         grad_f[var]=(f_plus-f_minus)/(2.0*dh) 
         diff[var]=norm(grad_f[var]-np.sum(grad_a[var]))
     return grad_f    
-    #return np.max([d for d in diff.values()])
