@@ -26,15 +26,14 @@ if gpu:
     import hamiltonian.logisticgpu as logistic
     LOG=logistic.LOGISTIC()
 
-    par,loss,numpy_par=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+    par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 else:
     import hamiltonian.logisticcpu as logistic
     LOG=logistic.LOGISTIC()
 
     par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 
-y_pred=LOG.predict(X_test.copy(), numpy_par)
-print(y_pred)
+y_pred=LOG.predict(X_test.copy(), par)
 print(classification_report(y_test.copy(), y_pred))
 print(confusion_matrix(y_test.copy(), y_pred))
 
@@ -55,24 +54,23 @@ import time
 
 ncores=cpu_count()
 #backend = 'simulated_data'
-backend = None
+#backend = None
 niter = 1e3
 burnin = 1e2
 
-mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, numpy_par, alpha, path_length=1,verbose=0)
+mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, par, alpha, path_length=1,verbose=0)
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,backend=backend, ncores=ncores)
 
-#rng = [np.random.RandomState(i) for i in range(1)]
-#posterior_sample,logp_samples=mcmc.sample(niter,burnin,backend, rng[0])
 
 if backend:
     par_mean = mcmc.multicore_mean(posterior_sample, niter, ncores=ncores)
 
     y_pred_mc=LOG.predict(X_test,par_mean)
 
-    print (y_pred_mc)
-    print (y_pred)
+    print(classification_report(y_test, y_pred))
+    print(confusion_matrix(y_test, y_pred))
+
 
 else:
     if gpu:

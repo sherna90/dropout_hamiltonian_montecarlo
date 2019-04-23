@@ -29,7 +29,7 @@ class LOGISTIC:
             if verbose and (i%(epochs/10)==0):
                 print('iteration {} , loss: {}'.format(i,loss_val[i]))
         #numpy_par = {var:cp.asnumpy(par[var]) for var in par.keys()}
-        return par, loss_val, par
+        return par, loss_val
 
     def iterate_minibatches(self,X, y, batchsize):
         assert X.shape[0] == y.shape[0]
