@@ -14,9 +14,9 @@ class LOGISTIC:
         pass
 
     def sgd(self,X, y, par,hyper, eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
-        par = {var:cp.asarray(par[var]) for var in par.keys()}
-        loss_val = cp.zeros(np.int(epochs))
-        momemtum={var:cp.zeros_like(par[var]) for var in par.keys()}
+        #par = {var:cp.asarray(par[var]) for var in par.keys()}
+        loss_val = np.zeros(np.int(epochs))
+        momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
         gamma=0.9
         for i in range(np.int(epochs)):
             for batch in self.iterate_minibatches(X, y, batch_size):
@@ -28,14 +28,14 @@ class LOGISTIC:
             loss_val[i]=-self.loss(X_batch,y_batch,par,hyper)/float(batch_size)
             if verbose and (i%(epochs/10)==0):
                 print('iteration {} , loss: {}'.format(i,loss_val[i]))
-        numpy_par = {var:cp.asnumpy(par[var]) for var in par.keys()}
-        return par, loss_val, numpy_par
+        #numpy_par = {var:cp.asnumpy(par[var]) for var in par.keys()}
+        return par, loss_val, par
 
     def iterate_minibatches(self,X, y, batchsize):
         assert X.shape[0] == y.shape[0]
         for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
             excerpt = slice(start_idx, start_idx + batchsize)
-            yield cp.asarray(X[excerpt]), cp.asarray(y[excerpt])
+            yield X[excerpt], y[excerpt]
 
     def grad(self, X,y,par,hyper):
         yhat=self.net(X, par)
@@ -55,7 +55,7 @@ class LOGISTIC:
         return yhat
 
     def sigmoid(self, y_linear):
-        norms=(1.0 + cp.exp(-y_linear))
+        norms=(1.0 + np.exp(-y_linear))
         return 1.0 / norms
 
     def loss(self, X, y, par,hyper):
@@ -67,11 +67,11 @@ class LOGISTIC:
         return ll
 
     def cross_entropy(self, y_linear, y):
-        aux1 = cp.exp(y_linear)
-        var = -cp.log(1.0 + aux1)
-        return -cp.log(1.0 + cp.exp(y_linear)) + y*y_linear
+        aux1 = np.exp(y_linear)
+        var = -np.log(1.0 + aux1)
+        return -np.log(1.0 + np.exp(y_linear)) + y*y_linear
 
     def predict(self, X, par):
-        yhat = self.net(cp.asarray(X), par)
-        pred = 1 * cp.array( yhat > 0.5)
-        return cp.asnumpy(pred)
+        yhat = self.net(X, par)
+        pred = 1 * np.array( yhat > 0.5)
+        return pred

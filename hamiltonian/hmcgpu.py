@@ -47,7 +47,7 @@ class HMC:
         self._verbose=verbose
 
 
-    def step(self,X_gpu, y_gpu,state,momentum,rng):
+    def step(self,state,momentum,rng):
         #n_steps =max(1, int(self.path_length / self.step_size))
         n_steps=5
         direction = 1.0 if rng.rand() > 0.5 else -1.0
@@ -57,9 +57,9 @@ class HMC:
         q_new = deepcopy(q)
         p_new = deepcopy(p)
         for i in range(n_steps):
-            q_new, p_new=self.leapfrog_nocache(X_gpu, y_gpu,q_new, p_new, epsilon)
+            q_new, p_new=self.leapfrog_nocache(q_new, p_new, epsilon)
             #q_new, p_new,cache=self.leapfrog(q_new, p_new, epsilon,cache)
-        acceptprob=self.accept(X_gpu,y_gpu,q, q_new, p, p_new)
+        acceptprob=self.accept(q, q_new, p, p_new)
         if np.isfinite(acceptprob) and (rng.rand() < acceptprob): 
             q = q_new
             p = p_new
@@ -70,38 +70,37 @@ class HMC:
         return cp.mean(acceptprob)
 
     def leapfrog(self,q, p,epsilon,cache):
+        print("con cache")
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         cache_new=deepcopy(cache)
-        grad_q=self.grad(X_gpu,y_gpu,q_new,self.hyper)
+        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
         eps=1e-8
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (cp.sqrt(cache_new[var]) + eps)
             q_new[var]+= epsilon[var]*p_new[var]/ (cp.sqrt(cache_new[var]) + eps)
-        grad_q=self.grad(X_gpu,y_gpu,q_new,self.hyper)
+        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (cp.sqrt(cache_new[var]) + eps)
         return q_new, p_new, cache_new
 
-    def leapfrog_nocache(self,X_gpu, y_gpu, q, p,epsilon):
+    def leapfrog_nocache(self, q, p,epsilon):
         q_new=deepcopy(q)
         p_new=deepcopy(p)
-        q_new_gpu = {var:cp.asarray(q_new[var]) for var in q_new.keys()}
-        p_new_gpu = {var:cp.asarray(p_new[var]) for var in p_new.keys()}
-        grad_q=self.grad(X_gpu,y_gpu,q_new_gpu,self.hyper)
+        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
         for var in self.start.keys():
-            q_new_gpu[var]+= (0.5*epsilon[var])*grad_q[var]
-            p_new_gpu[var]+= epsilon[var]*p_new_gpu[var]
-        grad_q=self.grad(X_gpu,y_gpu,q_new_gpu,self.hyper)
+            p_new[var]+= (0.5*epsilon[var])*grad_q[var]
+            q_new[var]+= epsilon[var]*p_new[var]
+        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
         for var in self.start.keys():
-            p_new_gpu[var]+= (0.5*epsilon[var])*grad_q[var]
-        return q_new_gpu, p_new_gpu
+            p_new[var]+= (0.5*epsilon[var])*grad_q[var]
+        return q_new, p_new
 
-    def accept(self,X_gpu,y_gpu,current_q, proposal_q, current_p, proposal_p):
-        E_new = self.energy(X_gpu,y_gpu, proposal_q,proposal_p)
-        E_current = self.energy(X_gpu,y_gpu,current_q,current_p)
+    def accept(self,current_q, proposal_q, current_p, proposal_p):
+        E_new = self.energy(proposal_q,proposal_p)
+        E_current = self.energy(current_q,current_p)
         A = min(1,cp.exp(E_current - E_new))
         return A
 
@@ -110,12 +109,12 @@ class HMC:
         K=0
         for var in self.start.keys():
             #K-=0.5*cp.sum(self._inv_mass_matrix[var].reshape(self.start[var].shape)*cp.square(p[var]))
-            K-=0.5*cp.sum(cp.square(cp.asarray(p[var])))
+            K-=0.5*cp.sum(np.square(p[var]))
         return K
 
-    def energy(self,X_gpu,y_gpu, q, p):
+    def energy(self,q, p):
         K=-self.potential_energy(p)
-        U=-self.logp(X_gpu,y_gpu,q,self.hyper)
+        U=-self.logp(self.X, self.y,q,self.hyper)
         return K+U 
 
 
@@ -130,28 +129,26 @@ class HMC:
 
 
     def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
-        print("antes")
-        a = cp.sum(np.arange(5))
-        b = cp.dot(self.X, 5) 
-        print(a)
-        print(b)
-        print("despues")
-        X_gpu = cp.asarray(self.X)
-        y_gpu = cp.asarray(self.y)
-        q,p={var:cp.asarray(self.start[var]) for var in self.start.keys()},self.draw_momentum(rng)
-        self.find_reasonable_epsilon(X_gpu, y_gpu, q,rng)
+
+        #print(np.square(self.X))
+        #print(cp.square(self.X))
+
+        q,p=self.start,self.draw_momentum(rng)
+        self.find_reasonable_epsilon(q,rng)
+
         for i in tqdm(range(int(burnin))):
-            q,p,a=self.step(X_gpu, y_gpu,q,p,rng)
+            q,p,a=self.step(q,p,rng)
+
         logp_samples=np.zeros(int(niter))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
             for var in self.start.keys():
                 param_shape=self.start[var].shape
-                posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=cp.float32)
+                posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             for i in tqdm(range(int(niter))):
-                q,p,a=self.step(X_gpu,y_gpu,q,p,rng)
-                logp_samples[i]=self.logp(X_gpu,y_gpu,q,self.hyper)
+                q,p,a=self.step(q,p,rng)
+                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
                     param_shape=self.start[var].shape
                     posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
@@ -162,8 +159,8 @@ class HMC:
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter))):
-                q,p,a=self.step(X_gpu,y_gpu,q,p,rng)
-                logp_samples[i]=self.logp(X_gpu,y_gpu,q,self.hyper)
+                q,p,a=self.step(q,p,rng)
+                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
                     posterior[var].append(q[var].reshape(-1))
             for var in self.start.keys():
@@ -180,11 +177,10 @@ class HMC:
 
         pool = Pool(processes=ncores)
         results=pool.map(unwrap_self_mcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
-        time.sleep(5)
 
         if not backend:
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-            logp_samples=cp.concatenate([r[1] for r in results],axis=0)
+            logp_samples=np.concatenate([r[1] for r in results],axis=0)
             return posterior,logp_samples
         else:
             logp_samples=np.concatenate([r[1] for r in results],axis=0)
@@ -196,27 +192,27 @@ class HMC:
             for var in self.start.keys():
                 posterior[var].append(s[var].reshape(-1))
         for var in self.start.keys():
-            posterior[var]=cp.array(posterior[var])
+            posterior[var]=np.array(posterior[var])
             self._mass_matrix[var]=alpha*self._mass_matrix[var]+(1-alpha)*cp.var(posterior[var],axis=0)
             self._inv_mass_matrix[var]=1./self._mass_matrix[var]
             
-    def find_reasonable_epsilon(self,X_gpu, y_gpu, state,rng):
+    def find_reasonable_epsilon(self, state,rng):
         q =state.copy()
         p = self.draw_momentum(rng)
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
-        cache = {var:cp.zeros_like(self.start[var]) for var in self.start.keys()}
+        cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
         #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
-        q_new, p_new = self.leapfrog_nocache(X_gpu, y_gpu, q, p, epsilon)
-        acceptprob=self.accept(X_gpu,y_gpu,q, q_new, p, p_new)
+        q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
+        acceptprob=self.accept(q, q_new, p, p_new)
         while (0.5 > acceptprob):
             direction*=1.0
             self.step_size*=0.5
             epsilon={var:direction*self.step_size for var in self.start.keys()}
-            cache = {var:cp.zeros_like(self.start[var]) for var in self.start.keys()}
+            cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
             #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
-            q_new, p_new = self.leapfrog_nocache(X_gpu, y_gpu,q, p, epsilon)
-            acceptprob=self.accept(X_gpu,y_gpu,q, q_new, p, p_new)
+            q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
+            acceptprob=self.accept(q, q_new, p, p_new)
         #print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
 
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
