@@ -17,7 +17,7 @@ sys.path.append("../")
 import numpy as np
 import time
 
-gpu = True
+gpu = False
 alpha=1./4.
 start_p={'weights':np.zeros(D),'bias':np.zeros(1)}
 hyper_p={'alpha':alpha}
@@ -54,7 +54,7 @@ import time
 
 ncores=cpu_count()
 #backend = 'simulated_data'
-#backend = None
+backend = None
 niter = 1e3
 burnin = 1e2
 
