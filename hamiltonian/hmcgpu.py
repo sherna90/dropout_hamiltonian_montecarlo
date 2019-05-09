@@ -218,11 +218,11 @@ class HMC:
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
         pool = Pool(processes=ncores)
         results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
-        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+        aux={var:((cp.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return aux
 
     def sample_mean(self, filename):
         f=h5py.File(filename)
-        aux = {var:np.sum(f[var],axis=0) for var in f.keys()}
+        aux = {var:cp.sum(f[var],axis=0) for var in f.keys()}
         return aux
         

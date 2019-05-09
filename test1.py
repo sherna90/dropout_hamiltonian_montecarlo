@@ -1,25 +1,16 @@
-import cupy as cp
 import numpy as np
-import time as t
 
-a = np.arange(10000)
-b = 2
-a2 = cp.asarray(a)
-b2 = cp.asarray(2)
+D = 2
 
-aux = t.time()
-np.dot(a,b)
-np.sum(a)
-print("CPU: ", t.time()-aux)
+centers = [np.random.random_integers(0,10,D)]
+print(centers)
 
+centers = []
+for i in range(3):
+    centers.append(np.random.random_integers(0,10,D))
 
-aux = t.time()
-cp.dot(a2,b2)
-cp.sum(a2)
-print("GPU con asarray: ",t.time()-aux)
+print(centers)
 
+aux = [np.random.random_integers(0,10,D) for i in range(3)]
+print(aux)
 
-aux = t.time()
-cp.dot(a,b)
-cp.sum(a)
-print("GPU con cpu", t.time()-aux)
