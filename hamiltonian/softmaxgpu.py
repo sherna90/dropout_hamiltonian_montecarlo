@@ -1,12 +1,12 @@
 import warnings
 warnings.filterwarnings("ignore")
 
+import cupy as cp
 import numpy as np
 from utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
-import time
 
 class SOFTMAX:
     def __init__(self):
@@ -15,11 +15,11 @@ class SOFTMAX:
     def cross_entropy(self, y_linear, y):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
         lse=logsumexp(y_linear,axis=1)
-        y_hat=y_linear-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
-        return np.sum(y *  y_hat,axis=1)
+        y_hat=y_linear-cp.repeat(lse[:,cp.newaxis],y.shape[1]).reshape(y.shape)
+        return cp.sum(y *  y_hat,axis=1)
 
     def log_prior(self, par,hyper):
-        logpdf=lambda z,alpha,k : -0.5*np.sum(alpha*np.square(z))-0.5*k*np.log(1./alpha)-0.5*k*np.log(2*np.pi)
+        logpdf=lambda z,alpha,k : -0.5*cp.sum(alpha*np.square(z))-0.5*k*cp.log(1./alpha)-0.5*k*cp.log(2*cp.pi)
         par_dims={var:np.array(par[var]).size for var in par.keys()}
         log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
         return np.sum(log_prior)
@@ -27,7 +27,7 @@ class SOFTMAX:
     def softmax(self, y_linear):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
         exp = np.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
-        norms = np.sum(exp, axis=1).reshape((-1,1))
+        norms = cp.sum(exp, axis=1).reshape((-1,1))
         return exp / norms
 
     def net(self, X,par):
@@ -77,7 +77,7 @@ class SOFTMAX:
                     par[var]+=momemtum[var]
             loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
             if verbose and (i%(epochs/10)==0):
-                print('loss: {0:.4f}'.format(loss_val[i]))
+                print('loss: {0:.4f}'.format(loss_val[i]) )
         return par,loss_val
 
     def predict(self, X,par,prob=False):

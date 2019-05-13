@@ -70,7 +70,6 @@ class HMC:
         return cp.mean(acceptprob)
 
     def leapfrog(self,q, p,epsilon,cache):
-        print("con cache")
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         cache_new=deepcopy(cache)
@@ -136,7 +135,7 @@ class HMC:
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
 
-        for i in tqdm(range(int(burnin))):
+        for i in range(int(burnin)):
             q,p,a=self.step(q,p,rng)
 
         logp_samples=np.zeros(int(niter))
@@ -146,7 +145,7 @@ class HMC:
             for var in self.start.keys():
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
-            for i in tqdm(range(int(niter))):
+            for i in range(int(niter)):
                 q,p,a=self.step(q,p,rng)
                 logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
@@ -158,7 +157,7 @@ class HMC:
             return 1, logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
-            for i in tqdm(range(int(niter))):
+            for i in range(int(niter)):
                 q,p,a=self.step(q,p,rng)
                 logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
@@ -218,11 +217,11 @@ class HMC:
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
         pool = Pool(processes=ncores)
         results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
-        aux={var:((cp.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return aux
 
     def sample_mean(self, filename):
         f=h5py.File(filename)
-        aux = {var:cp.sum(f[var],axis=0) for var in f.keys()}
+        aux = {var:np.sum(f[var],axis=0) for var in f.keys()}
         return aux
         

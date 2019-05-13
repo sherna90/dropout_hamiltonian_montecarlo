@@ -129,8 +129,8 @@ class HMC:
 
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
-
-        for i in tqdm(range(int(burnin))):
+        #tqdm
+        for i in range(int(burnin)):
             q,p,a=self.step(q,p,rng)
 
         logp_samples=np.zeros(niter)
@@ -140,7 +140,8 @@ class HMC:
             for var in self.start.keys():
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
-            for i in tqdm(range(int(niter))):
+            #tqdm
+            for i in range(int(niter)):
                 q,p,a=self.step(q,p,rng)
                 logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
@@ -152,7 +153,8 @@ class HMC:
             return 1, logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
-            for i in tqdm(range(int(niter))):
+            #tqdm
+            for i in range(int(niter)):
                 q,p,a=self.step(q,p,rng)
                 logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
@@ -207,7 +209,8 @@ class HMC:
             #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
             q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
             acceptprob=self.accept(q, q_new, p, p_new)
-        print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
+        #print
+        #print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
 
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
         pool = Pool(processes=ncores)
