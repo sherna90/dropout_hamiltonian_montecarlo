@@ -4,9 +4,9 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 import numpy as np
 
-D=2
+D=100
 centers = [np.random.random_integers(0,10,D),np.random.random_integers(0,10,D)]
-X, y = make_blobs(n_samples=100, centers=centers, cluster_std=10,random_state=40)
+X, y = make_blobs(n_samples=1000, centers=centers, cluster_std=10,random_state=40)
 X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
@@ -31,7 +31,10 @@ else:
     import hamiltonian.logisticcpu as logistic
     LOG=logistic.LOGISTIC()
 
+    start = time.time()
     par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+    meta = time.time() - start
+    print("** => ",meta)
 
 y_pred=LOG.predict(X_test.copy(), par)
 print(classification_report(y_test.copy(), y_pred))
@@ -60,11 +63,16 @@ burnin = 1e2
 
 mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, par, alpha, path_length=1,verbose=0)
 
+start = time.time()
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,backend=backend, ncores=ncores)
-
+meta = time.time() - start
+print("** => ",meta)
 
 if backend:
+    start = time.time()
     par_mean = mcmc.multicore_mean(posterior_sample, niter, ncores=ncores)
+    meta = time.time() - start
+    print("** => ",meta)
 
     y_pred_mc=LOG.predict(X_test,par_mean)
 
@@ -74,16 +82,11 @@ if backend:
 
 else:
     if gpu:
+        start = time.time()
         par_mean={var:cp.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
         par_var={var:cp.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-
-        '''
-        par_mean_gpu = start_p.copy()
-        for var in par_mean.keys():
-            for i in range(len(par_mean[var])):
-                par_mean_gpu[var][i] = par_mean[var][i]
-
-        par_mean_gpu={var:cp.asarray(par_mean_gpu[var]) for var in start_p.keys()}'''
+        meta = time.time() - start
+        print("** => ",meta)
 
         y_pred2=LOG.predict(X_test.copy(),par_mean)
         print(y_pred2)
@@ -91,8 +94,12 @@ else:
         print(classification_report(y_test.copy(), y_pred2))
         print(confusion_matrix(y_test.copy(), y_pred2))
     else:
+        start = time.time()
         par_mean={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
         par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+        meta = time.time() - start
+        print("** => ",meta)
+
         y_pred=LOG.predict(X_test,par_mean)
 
         print(classification_report(y_test, y_pred))

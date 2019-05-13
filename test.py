@@ -16,7 +16,7 @@ hyper_p={'alpha':alpha}
 n_samples = [100, 1000, 5000, 10000]
 #batch_size_list = [50, 100, 200, 300, 500]
 batch_size_list = [50]
-D_list = [ 10, 50, 100, 500, 1000, 5000, 10000, 20000]
+D_list = [10, 50, 100, 500, 1000, 5000, 10000, 20000]
 
 df = pd.DataFrame()
 
