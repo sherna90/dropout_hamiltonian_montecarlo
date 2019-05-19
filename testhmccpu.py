@@ -26,15 +26,12 @@ if gpu:
     import hamiltonian.logisticgpu as logistic
     LOG=logistic.LOGISTIC()
 
-    par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+    par,loss=LOG.sgd(X_train.copy(), y_train.copy(), start_p.copy(), hyper_p.copy(), eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 else:
     import hamiltonian.logisticcpu as logistic
     LOG=logistic.LOGISTIC()
 
-    start = time.time()
-    par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
-    meta = time.time() - start
-    print("** => ",meta)
+    par,loss=LOG.sgd(X_train.copy(), y_train.copy(), start_p.copy(), hyper_p.copy(), eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 
 y_pred=LOG.predict(X_test.copy(), par)
 print(classification_report(y_test.copy(), y_pred))
@@ -51,7 +48,7 @@ else:
 
 import hamiltonian.utils as utils
 import numpy as np
-import cupy as cp
+#import cupy as cp
 import h5py 
 import time
 
@@ -61,32 +58,23 @@ backend = None
 niter = 1e3
 burnin = 1e2
 
-mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, par, alpha, path_length=1,verbose=0)
+mcmc=hmc.HMC(X_train.copy(),y_train.copy(),LOG.loss, LOG.grad, start_p.copy(), hyper_p.copy(), path_length=1,verbose=0)
 
-start = time.time()
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,backend=backend, ncores=ncores)
-meta = time.time() - start
-print("** => ",meta)
 
 if backend:
-    start = time.time()
     par_mean = mcmc.multicore_mean(posterior_sample, niter, ncores=ncores)
-    meta = time.time() - start
-    print("** => ",meta)
 
-    y_pred_mc=LOG.predict(X_test,par_mean)
+    y_pred_mc=LOG.predict(X_test.copy(),par_mean)
 
-    print(classification_report(y_test, y_pred))
-    print(confusion_matrix(y_test, y_pred))
+    print(classification_report(y_test.copy(), y_pred))
+    print(confusion_matrix(y_test.copy(), y_pred))
 
 
 else:
     if gpu:
-        start = time.time()
         par_mean={var:cp.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
         par_var={var:cp.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-        meta = time.time() - start
-        print("** => ",meta)
 
         y_pred2=LOG.predict(X_test.copy(),par_mean)
         print(y_pred2)
@@ -94,13 +82,10 @@ else:
         print(classification_report(y_test.copy(), y_pred2))
         print(confusion_matrix(y_test.copy(), y_pred2))
     else:
-        start = time.time()
         par_mean={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
         par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-        meta = time.time() - start
-        print("** => ",meta)
 
-        y_pred=LOG.predict(X_test,par_mean)
+        y_pred=LOG.predict(X_test.copy(),par_mean)
 
-        print(classification_report(y_test, y_pred))
-        print(confusion_matrix(y_test, y_pred))
+        print(classification_report(y_test.copy(), y_pred))
+        print(confusion_matrix(y_test.copy(), y_pred))

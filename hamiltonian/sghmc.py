@@ -14,7 +14,7 @@ import h5py
 def unwrap_self_sgmcmc(arg, **kwarg):
     return SGHMC.sample(*arg, **kwarg)
 
-class SGHMC(HMC):
+class SGHMC(HMCCPU):
 
     def step(self,X_batch,y_batch,state,momemtum,rng):
         #n_steps = max(1, int(self.path_length / self.step_size))
