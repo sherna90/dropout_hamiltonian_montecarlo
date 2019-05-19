@@ -19,13 +19,12 @@ def unwrap_self_mcmc(arg, **kwarg):
 def unwrap_self_mean(arg, **kwarg):
     return HMC.sample_mean(*arg, **kwarg)
 
-
 class HMC:
-    def __init__(self, X,y,logp, grad, par, alpha, path_length=None,verbose=True):
+    def __init__(self, X,y,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
         self.X=X
         self.y=y
-        self.start = par
-        self.hyper = {'alpha':alpha}
+        self.start = start_p
+        self.hyper = hyper_p
         self.step_size = 1.0
         self.path_length = path_length if path_length is not None else 2 * math.pi
         self.logp = logp
