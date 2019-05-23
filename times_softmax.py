@@ -36,8 +36,7 @@ if gpu:
 
     par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 else:
-    #import hamiltonian.softmaxcpu as softmax
-    import hamiltonian.softmaxgpu as softmax
+    import hamiltonian.softmaxcpu as softmax
     SOFT=softmax.SOFTMAX()
     par,loss=SOFT.sgd(X_train.copy(), y_train.copy(),K, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 
