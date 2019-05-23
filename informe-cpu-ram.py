@@ -23,10 +23,15 @@ niter = 1e3
 burnin = 1e2
 
 n_samples = [100, 1000, 5000, 10000]
-D_list = [10, 50, 100, 500, 1000, 5000, 10000, 20000]
+D_list = [10, 50]
 
 import hamiltonian.logisticcpu as logistic
 import time
+
+df = pd.DataFrame(columns=['D', 'n', 'Time'])
+cont = 0
+
+LOG=logistic.LOGISTIC()
 
 for j in range(len(D_list)):
     D=D_list[j]
@@ -38,22 +43,27 @@ for j in range(len(D_list)):
         X = (X - X.mean(axis=0)) / X.std(axis=0)
         X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-        start = time.time()
-        LOG=logistic.LOGISTIC()
-        par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=False)
+        #par,loss=LOG.sgd(X_train, y_train, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=False)
 
-        mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, par, alpha, path_length=1,verbose=0)
+        mcmc=hmc.HMC(X_train,y_train,LOG.loss, LOG.grad, start_p, hyper_p, path_length=1,verbose=0)
         
+        start = time.time()
         posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,backend=backend, ncores=ncores)
+        end = time.time() - start
+        print("{} {} {}".format(D_list[j], n_samples[i], end))
+        df.loc[cont] = [D_list[j], n_samples[i], end]
+        cont += 1
 
+        '''
         par_mean={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
         #par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 
         y_pred=LOG.predict(X_test,par_mean)
 
-        end = time.time() - start
+        
         print("D:{} - n_sample:{}: {}".format(D_list[j], n_samples[i], end))
 
         print(classification_report(y_test, y_pred))
         print(confusion_matrix(y_test, y_pred))
-
+        '''
+df.to_csv('informe-cpu-ram.csv', sep='\t')

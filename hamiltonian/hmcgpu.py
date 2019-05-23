@@ -27,7 +27,7 @@ class HMC:
         self.X=X
         self.y=y
         self.start = par
-        self.hyper = {'alpha':alpha}
+        self.hyper = alpha
         self.step_size = 1.0
         self.path_length = path_length if path_length is not None else 2 * math.pi
         self.logp = logp

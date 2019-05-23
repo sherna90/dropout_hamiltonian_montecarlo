@@ -29,8 +29,8 @@ print(confusion_matrix(y_test.copy(), y_pred))
 
 mcmc=sampler.SGHMC(X_train.copy(),y_train.copy(),LOG.loss, LOG.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
-backend = 'test_sghmc_'
-#backend = None
+#backend = 'test_sghmc_'
+backend = None
 niter = 1e3
 burnin = 1e2
 
