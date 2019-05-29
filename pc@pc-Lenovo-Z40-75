@@ -1,2 +1,0 @@
-	cpu_D:1000_Batchsize:50	gpu_D:1000_Batchsize:50	cpu_D:2000_Batchsize:50	gpu_D:2000_Batchsize:50
-GPU_batch_50	GPU_batch_50	GPU_batch_50	GPU_batch_50	GPU_batch_50
