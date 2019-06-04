@@ -7,7 +7,11 @@ import hamiltonian.utils as utils
 
 import hamiltonian.softmaxcpu as softmax
 import hamiltonian.pruebaSgldQueue as sampler
+import h5py
 
+
+################################## SIMULATED TEST ##################################
+'''
 K = 5
 D=100
 centers = [np.random.random_integers(0,10,D) for i in range(K)]
@@ -18,26 +22,47 @@ y=utils.one_hot(y,K)
 X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
-################################
-
 alpha=1./10.
 start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
+'''
+################################## SIMULATED TEST ##################################
+
+################################## PLANTS HDF5 ##################################
+
+alpha=1e-3
+data_path = 'data/'
+
+plants_train=h5py.File(data_path+'train_features_labels.h5','r')
+X_train=plants_train['train_features']
+y_train=plants_train['train_labels']
+plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
+X_test=plants_test['validation_features']
+y_test=plants_test['validation_labels']
+
+D=X_train.shape[1]
+num_classes=len(np.unique(y_train))
+start_p={'weights':np.random.randn(D,num_classes),
+        'bias':np.random.randn(num_classes)}
+hyper_p={'alpha':alpha}
+
+################################## PLANTS HDF5 ##################################
+
 
 SOFT=softmax.SOFTMAX()
-par,loss=SOFT.sgd(X_train.copy(), y_train.copy(),K, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
 
 y_pred=SOFT.predict(X_test.copy(),par)
 print(classification_report(y_test.copy().argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
 print ('-------------------------------------------')
 
-mcmc=sampler.SGLD(X_train.copy(),y_train.copy(),SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
+mcmc=sampler.SGLD(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
 #backend = 'test_sghmc_'
 backend = None
-niter = 1e4
-burnin = 1e3
+niter = 1e3
+burnin = 1e2
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 
