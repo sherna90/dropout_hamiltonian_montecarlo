@@ -21,7 +21,7 @@ class SGLD(HMC):
 
     def step(self,X_batch,y_batch,state,rng):
         q_new = deepcopy(state)
-        n_data=np.float(self.y.shape[0])
+        n_data=np.float(self.y)
         epsilon={var:self.step_size/n_data for var in self.start.keys()}
         #n_x,n_y=X_batch.shape
         #Z=np.random.binomial(1,0.5,n_x*n_y).reshape((n_x,n_y))
@@ -33,7 +33,7 @@ class SGLD(HMC):
         q_new=deepcopy(q)
         grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
         n_batch=np.float(y_batch.shape[0])
-        n_data=np.float(self.y.shape[0])
+        n_data=np.float(self.y)
         for var in self.start.keys():
             noise_scale = 2.0*epsilon[var]
             sigma = np.sqrt(max(noise_scale, 1e-16)) 
@@ -44,9 +44,8 @@ class SGLD(HMC):
 
     def sample(self,niter=1e4,burnin=1e3,batchsize=20,backend=None,rng=None):
         q=self.start
-
         for i in tqdm(range(int(burnin)),total=int(burnin)):
-            for i in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+            for auxiliar in range(len(range(0, self.X - batchsize + 1, batchsize))):
                 X_batch, y_batch = SGLD.sample.q.get()
                 q=self.step(X_batch,y_batch,q,rng)
         
@@ -58,7 +57,7 @@ class SGLD(HMC):
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for i in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+                for auxiliar in range(len(range(0, self.X - batchsize + 1, batchsize))):
                     X_batch, y_batch = SGLD.sample.q.get()
                     q=self.step(X_batch,y_batch,q,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
@@ -72,7 +71,7 @@ class SGLD(HMC):
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for i in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+                for auxiliar in range(len(range(0, self.X - batchsize + 1, batchsize))):
                     X_batch, y_batch = SGLD.sample.q.get()
                     q=self.step(X_batch,y_batch,q,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
@@ -88,16 +87,26 @@ class SGLD(HMC):
             excerpt = slice(start_idx, start_idx + batchsize)
             yield X[excerpt], y[excerpt]
 
-    def f1(self, q, q_aux, batchsize, total):
-        for i in range(int(total)):
-            #assert self.X.shape[0] == self.y.shape[0]
-            for start_idx in range(0, self.X.shape[0] - batchsize + 1, batchsize):
-                excerpt = slice(start_idx, start_idx + batchsize)
-                q.put((self.X[excerpt], self.y[excerpt]))
+    def f1(self, q, batchsize, total):
+        data_path = '../data/'
+        plants_train=h5py.File(data_path+'train_features_labels.h5','r')
+        X_train=plants_train['train_features']
+        y_train=plants_train['train_labels']
 
-    def sample_init(self, q, q_aux):
+        aaa = len(range(0, self.X - batchsize + 1, batchsize)) * int(total)
+        cont = 1
+
+        for i in range(int(total)):
+            #assert self.X == self.y
+            for start_idx in range(0, self.X - batchsize + 1, batchsize):
+                print("{} de {}".format(cont, aaa))
+                cont += 1
+                excerpt = slice(start_idx, start_idx + batchsize)
+                q.put((X_train[excerpt], y_train[excerpt]))
+        plants_train.close()
+
+    def sample_init(self, q):
         SGLD.sample.q = q
-        SGLD.sample.q_aux = q_aux
     
     def multicore_sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,ncores=cpu_count()):
         if backend:
@@ -109,15 +118,14 @@ class SGLD(HMC):
 
         ################## QUEUE ##################
         q = Queue(maxsize=ncores)
-        q_aux = Queue(maxsize=1)
-        q_aux.put(1)
         
-        l = Process(target=SGLD.f1, args=(self, q, q_aux, batch_size, (niter + burnin)))
+        l = Process(target=SGLD.f1, args=(self, q, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
 
-        p = Pool(None, SGLD.sample_init, [self, q, q_aux])
+        p = Pool(None, SGLD.sample_init, [self, q])
 
         l.start()
 
+        #time.sleep(100)
         ################## QUEUE ##################
 
         #pool = Pool(processes=ncores)
