@@ -64,16 +64,12 @@ class SOFTMAX:
             yield X[excerpt], y[excerpt]
 
     def sgd(self, X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=True):
-        aux = len(range(0, X.shape[0] - batch_size + 1, batch_size))
-        cont = 1
         loss_val=np.zeros((np.int(epochs)))
         momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
         gamma=0.9
         #n_data=np.float(y.shape[0])
         for i in tqdm(range(np.int(epochs))):
             for batch in self.iterate_minibatches(X, y, batch_size):
-                print("{} de {}".format(cont, aux))
-                cont += 1
                 X_batch, y_batch = batch
                 n_batch=np.float(y_batch.shape[0])
                 grad_p=self.grad(X_batch,y_batch,par,hyper)
@@ -82,7 +78,8 @@ class SOFTMAX:
                     par[var]+=momemtum[var]
             #loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
             if verbose and (i%(epochs/10)==0):
-                print('loss: {0:.4f}'.format(loss_val[i]))
+                pass
+                #print('loss: {0:.4f}'.format(loss_val[i]))
         return par,loss_val
 
     def predict(self, X,par,prob=False):
