@@ -3,51 +3,32 @@ from sklearn.datasets import make_blobs
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 import numpy as np
-import hamiltonian.utils as utils
 
+import sys
+sys.path.append("../") 
+import hamiltonian.utils as utils
 import hamiltonian.softmaxcpu as softmax
 import hamiltonian.pruebaSgldQueue as sampler
 import h5py
+import time
 
 
 ################################## SIMULATED TEST ##################################
-'''
-K = 5
+num_classes = 5
 D=100
-centers = [np.random.random_integers(0,10,D) for i in range(K)]
+centers = [np.random.random_integers(0,10,D) for i in range(num_classes)]
 X, y = make_blobs(n_samples=250, centers=centers, cluster_std=10,random_state=40)
 
-y=utils.one_hot(y,K)
+y=utils.one_hot(y,num_classes)
 
 X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 
 alpha=1./10.
-start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
+start_p={'weights':np.zeros((D,num_classes)),'bias':np.zeros((num_classes))}
 hyper_p={'alpha':alpha}
-'''
+
 ################################## SIMULATED TEST ##################################
-
-################################## PLANTS HDF5 ##################################
-
-alpha=1e-3
-data_path = 'data/'
-
-plants_train=h5py.File(data_path+'train_features_labels.h5','r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
-plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
-
-D=X_train.shape[1]
-num_classes=len(np.unique(y_train))
-start_p={'weights':np.random.randn(D,num_classes),
-        'bias':np.random.randn(num_classes)}
-hyper_p={'alpha':alpha}
-
-################################## PLANTS HDF5 ##################################
-
 
 SOFT=softmax.SOFTMAX()
 par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
@@ -64,7 +45,9 @@ backend = None
 niter = 1e3
 burnin = 1e2
 
-posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
+star = time.time()
+posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend, ncores=4)
+print(time.time() - star)
 
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
