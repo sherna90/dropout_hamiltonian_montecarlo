@@ -54,11 +54,19 @@ burnin = 10
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend, ncores=4)
 
-post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=SOFT.predict(X_test,post_par)
-print(classification_report(y_test[:].argmax(axis=1), y_pred))
-print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
+if backend:
+    par_mean = mcmc.multicore_mean(posterior_sample, niter)
+
+    y_pred_mc=SOFT.predict(X_test.copy(),par_mean)
+
+    print(classification_report(y_test[:].argmax(axis=1), y_pred_mc))
+    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred_mc))
+else:
+    post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+    #post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+    y_pred=SOFT.predict(X_test,post_par)
+    print(classification_report(y_test[:].argmax(axis=1), y_pred))
+    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
 
 print ('-------------------------------------------')
 from sklearn.linear_model import LogisticRegression
