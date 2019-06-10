@@ -142,10 +142,18 @@ class SGLD(HMC):
             return multi_backend,logp_samples
 
     def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
+        aux = []
+        for filename in multi_backend:
+            f=h5py.File(filename)
+            aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
+        mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+        return mean
+        '''
         pool = Pool(processes=ncores)
         results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
         aux={var:((np.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return aux
+        '''
 
     def sample_mean(self, filename):
         f=h5py.File(filename)

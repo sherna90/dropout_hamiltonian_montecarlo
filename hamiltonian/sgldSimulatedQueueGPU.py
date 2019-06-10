@@ -10,7 +10,7 @@ from hamiltonian.hmccpu import HMC
 from tqdm import tqdm, trange
 import h5py 
 import time
-import cupy
+import cupy as cp
 
 def unwrap_self_sgmcmc(arg, **kwarg):
     return SGLD.sample(*arg, **kwarg)
@@ -20,37 +20,47 @@ def unwrap_self_mean(arg, **kwarg):
 
 class SGLD(HMC):
 
-    def step(self,X_batch,y_batch,state,rng):
-        q_new = deepcopy(state)
+    def step(self,X_batch,y_batch,q_bias,q_weights,rng):
+        q_new_bias = deepcopy(q_bias)
+        q_new_weigths = deepcopy(q_weights)
         n_data=np.float(self.y.shape[0])
         epsilon={var:self.step_size/n_data for var in self.start.keys()}
         #n_x,n_y=X_batch.shape
         #Z=np.random.binomial(1,0.5,n_x*n_y).reshape((n_x,n_y))
         #X_batch_dropout=np.multiply(X_batch,Z)
-        q_new = self.langevin(q_new, epsilon,X_batch,y_batch,rng)
-        return q_new
+        q_new_bias, q_new_weigths = self.langevin(q_new_bias, q_new_weigths, epsilon,X_batch,y_batch,rng)
+        return q_new_bias, q_new_weigths
 
-    def langevin(self,q,epsilon,X_batch,y_batch,rng):
-        q_new=deepcopy(q)
-        grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
+    def langevin(self,q_bias,q_weights,epsilon,X_batch,y_batch,rng):
+        q_new_bias = deepcopy(q_bias)
+        q_new_weigths = deepcopy(q_weights)
+        grad_q_bias, grad_q_weights=self.grad(X_batch,y_batch,q_new_bias,q_new_weigths,self.hyper)        
         n_batch=np.float(y_batch.shape[0])
         n_data=np.float(self.y.shape[0])
-        for var in self.start.keys():
-            noise_scale = 2.0*epsilon[var]
-            sigma = np.sqrt(max(noise_scale, 1e-16)) 
-            dim=(np.array(self.start[var])).size
-            nu=sigma*rng.normal(0,sigma,dim).reshape(q_new[var].shape)
-            q_new[var]+=(n_data/n_batch)*epsilon[var] * grad_q[var]+nu
-        return q_new
+
+        noise_scale = 2.0*epsilon['bias']
+        sigma = np.sqrt(max(noise_scale, 1e-16)) 
+        dim=(np.array(self.start['bias'])).size
+        nu=sigma*rng.normal(0,sigma,dim).reshape(q_new_bias.shape)
+        q_new_bias+=cp.asarray((n_data/n_batch)*epsilon['bias']) * grad_q_bias+cp.asarray(nu)
+
+        noise_scale = 2.0*epsilon['weights']
+        sigma = np.sqrt(max(noise_scale, 1e-16)) 
+        dim=(np.array(self.start['weights'])).size
+        nu=sigma*rng.normal(0,sigma,dim).reshape(q_new_weigths.shape)
+        q_new_weigths+=cp.asarray((n_data/n_batch)*epsilon['weights']) * grad_q_weights+cp.asarray(nu)
+
+        return q_new_bias, q_new_weigths
 
     def sample(self,niter=1e4,burnin=1e3,batchsize=20,backend=None,rng=None):
-        q=self.start
+        q_bias = cp.asarray(self.start['bias'])
+        q_weights = cp.asarray(self.start['weights'])
 
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
                 X_batch, y_batch = SGLD.sample.q.get()
-                q=self.step(X_batch,y_batch,q,rng)
-        
+                q_bias,q_weights=self.step(X_batch,y_batch,q_bias,q_weights,rng)
+
         logp_samples=np.zeros(niter)
         if backend:
             backend_samples=h5py.File(backend)
@@ -61,7 +71,7 @@ class SGLD(HMC):
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
                     X_batch, y_batch = SGLD.sample.q.get()
-                    q=self.step(X_batch,y_batch,q,rng)
+                    q_bias, q_weights = self.step(X_batch,y_batch,q,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
@@ -75,13 +85,23 @@ class SGLD(HMC):
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
                     X_batch, y_batch = SGLD.sample.q.get()
-                    q=self.step(X_batch,y_batch,q,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
-                    for var in self.start.keys():
-                        posterior[var].append(q[var].reshape(-1))
-            for var in self.start.keys():
-                posterior[var]=np.array(posterior[var])
-            return posterior,logp_samples
+                    q_bias, q_weights=self.step(X_batch,y_batch,q_bias,q_weights,rng)
+                    #logp_samples[i] = self.logp(X_batch,y_batch,q_bias,q_weights,self.hyper)
+                    posterior['bias'].append(q_bias.reshape(-1))
+                    posterior['weights'].append(q_weights.reshape(-1))
+                    #for var in self.start.keys():
+                    #    posterior[var].append(q[var].reshape(-1))
+            #aux = {}
+            #aux['bias'] = cp.asnumpy(posterior['bias'])
+            #aux['weights'] = cp.asnumpy(posterior['weights'])
+            #posterior['bias']=np.array(posterior['bias'])
+            #posterior['weights']=np.array(posterior['weights'])
+            #for var in self.start.keys():
+            #    posterior[var]=np.array(posterior[var])
+
+            #posterior['bias'] = np.asarray(posterior['bias'])
+            #posterior['weigths'] = np.asarray(posterior['weights'])
+            return posterior['bias'],posterior['weights'], logp_samples
             
     def iterate_minibatches(self,X, y, batchsize):
         assert X.shape[0] == y.shape[0]
@@ -95,7 +115,7 @@ class SGLD(HMC):
             for start_idx in range(0, self.X.shape[0] - batchsize + 1, batchsize):
                 excerpt = slice(start_idx, start_idx + batchsize)
                 q.put((cp.asarray(self.X[excerpt]), cp.asarray(self.y[excerpt])))
-                print("put...")
+                print("put")
 
     def sample_init(self, q):
         SGLD.sample.q = q
@@ -116,16 +136,16 @@ class SGLD(HMC):
         p = Pool(None, SGLD.sample_init, [self, q])
 
         l.start()
-
-        time.sleep(100)
         ################## QUEUE ##################
 
         #pool = Pool(processes=ncores)
         results=p.map(unwrap_self_sgmcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[int(burnin/ncores)]*ncores,[batch_size]*ncores, multi_backend,rng))
+        print("VOLVI DE SAMPLE...")
 
         l.join() # ? #
 
         if not backend:
+            #aux = np.array(results[1][0])
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
             logp_samples=np.concatenate([r[1] for r in results],axis=0)
             return posterior,logp_samples
