@@ -40,14 +40,15 @@ print ('-------------------------------------------')
 
 mcmc=sampler.SGLD(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
-backend = 'test_sghmc_'
+backend = 'prueba4_sghmc_'
 #backend = None
-niter = 1e2
-burnin = 1e1
+niter = 1e3
+burnin = 1e2
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 
 if backend:
+    print("entre a backend...")
     par_mean = mcmc.multicore_mean(posterior_sample, niter)
 
     y_pred_mc=SOFT.predict(X_test.copy(),par_mean)

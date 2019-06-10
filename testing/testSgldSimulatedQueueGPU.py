@@ -7,8 +7,8 @@ import numpy as np
 import sys
 sys.path.append("../") 
 import hamiltonian.utils as utils
-import hamiltonian.softmaxcpu as softmax
-import hamiltonian.sgldSimulatedQueue as sampler
+import hamiltonian.softmaxgputest as softmax
+import hamiltonian.sgldSimulatedQueueGPU as sampler
 import h5py
 import time
 
@@ -31,19 +31,19 @@ hyper_p={'alpha':alpha}
 ################################## SIMULATED TEST ##################################
 
 SOFT=softmax.SOFTMAX()
-par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e2,batch_size=50,verbose=True)
+#par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e2,batch_size=50,verbose=True)
 
-y_pred=SOFT.predict(X_test.copy(),par)
-print(classification_report(y_test.copy().argmax(axis=1), y_pred))
-print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
-print ('-------------------------------------------')
+#y_pred=SOFT.predict(X_test.copy(),par)
+#print(classification_report(y_test.copy().argmax(axis=1), y_pred))
+#print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
+#print ('-------------------------------------------')
 
 mcmc=sampler.SGLD(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
-backend = 'test_sghmc_'
-#backend = None
-niter = 1e2
-burnin = 1e1
+#backend = 'test_sghmc_'
+backend = None
+niter = 1e3
+burnin = 1e2
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 

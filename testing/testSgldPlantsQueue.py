@@ -37,7 +37,7 @@ aux2 = y_train.shape[1]
 ################################## PLANTS HDF5 ##################################
 
 SOFT=softmax.SOFTMAX()
-par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e0,batch_size=50,verbose=True)
+par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e2,batch_size=50,verbose=True)
 
 y_pred=SOFT.predict(X_test,par)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
@@ -46,12 +46,12 @@ print ('-------------------------------------------')
 
 mcmc=sampler.SGLD(aux1, aux2, SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
-#backend = 'test_sghmc_'
-backend = None
-niter = 10
+backend = 'test_sghmc_'
+#backend = None
+niter = 100
 burnin = 10
 
-posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend, ncores=4)
+posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 
 if backend:
     par_mean = mcmc.multicore_mean(posterior_sample, niter)
