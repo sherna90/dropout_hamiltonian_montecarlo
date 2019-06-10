@@ -9,7 +9,7 @@ sys.path.append("../")
 
 import hamiltonian.utils as utils
 import hamiltonian.softmaxcpu as softmax
-import hamiltonian.pruebaSgldQueue as sampler
+import hamiltonian.sgldPlantsQueue as sampler
 import h5py
 import time
 
@@ -37,14 +37,13 @@ aux2 = y_train.shape[1]
 ################################## PLANTS HDF5 ##################################
 
 SOFT=softmax.SOFTMAX()
-'''
 par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e0,batch_size=50,verbose=True)
 
 y_pred=SOFT.predict(X_test,par)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
 print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
 print ('-------------------------------------------')
-'''
+
 mcmc=sampler.SGLD(aux1, aux2, SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
 #backend = 'test_sghmc_'
