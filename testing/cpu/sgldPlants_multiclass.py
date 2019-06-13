@@ -60,7 +60,7 @@ posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, 
 print("tiempo en Multi-core: ", time.time()-aux)
 
 if backend:
-    par_mean = mcmc.multicore_mean(posterior_sample, niter)
+    par_mean = mcmc.backend_mean(posterior_sample, niter)
 
     y_pred_mc=SOFT.predict(X_test,par_mean)
 

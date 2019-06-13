@@ -45,7 +45,7 @@ burnin = 1e2
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 
 if backend:
-    par_mean = mcmc.multicore_mean(posterior_sample, niter)
+    par_mean = mcmc.backend_mean(posterior_sample, niter)
 
     y_pred_mc=SOFT.predict(X_test.copy(),par_mean)
 
