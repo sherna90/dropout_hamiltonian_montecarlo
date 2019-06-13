@@ -1,12 +1,14 @@
 import warnings
 warnings.filterwarnings("ignore")
 
-import cupy as cp
 import numpy as np
 from utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
+import time
+from tqdm import tqdm
+import cupy as cp
 
 class SOFTMAX:
     def __init__(self):
@@ -15,29 +17,28 @@ class SOFTMAX:
     def cross_entropy(self, y_linear, y):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
         lse=logsumexp(y_linear,axis=1)
-        y_hat=y_linear-cp.repeat(lse[:,cp.newaxis],y.shape[1]).reshape(y.shape)
-        return cp.sum(y *  y_hat,axis=1)
+        y_hat=y_linear-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
+        return np.sum(y *  y_hat,axis=1)
 
-    def log_prior(self, par_bias,par_weights,hyper):
-        logpdf=lambda z,alpha,k : -0.5*cp.sum(alpha*np.square(z))-0.5*k*cp.log(1./alpha)-0.5*k*cp.log(2*cp.pi)
-                
+    def log_prior(self, par,hyper):
+        logpdf=lambda z,alpha,k : -0.5*np.sum(alpha*np.square(z))-0.5*k*np.log(1./alpha)-0.5*k*np.log(2*np.pi)
         par_dims={var:np.array(par[var]).size for var in par.keys()}
-        log_prior=[(par[logpdfvar],hyper['alpha'],par_dims[var]) for var in par.keys()]
+        log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
         return np.sum(log_prior)
 
     def softmax(self, y_linear):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
-        exp = cp.exp(y_linear-np.max(y_linear, axis=1).reshape((-1,1)))
+        exp = cp.exp(y_linear-cp.max(y_linear, axis=1).reshape((-1,1)))
         norms = cp.sum(exp, axis=1).reshape((-1,1))
         return exp / norms
 
-    def net(self, X,par_bias, par_weights):
+    def net(self, X,par_weights, par_bias):
         y_linear = cp.dot(X, par_weights) + par_bias
         yhat = self.softmax(y_linear)
         return yhat
 
-    def grad(self, X,y,par_bias, par_weights,hyper):
-        yhat=self.net(X,par_bias, par_weights)
+    def grad(self, X,y,par_weights,par_bias,hyper):
+        yhat=self.net(X,par_weights,par_bias)
         diff = y-yhat
         #diff=diff[:,:-1]
         grad_w = cp.dot(X.T, diff)
@@ -47,15 +48,15 @@ class SOFTMAX:
         grad['weights']+=hyper['alpha']*par_weights
         grad['bias']=grad_b
         grad['bias']+=hyper['alpha']*par_bias
-        return grad['bias'], grad['weights']	
+        return grad['weights'], grad['bias']	
     
-    def log_likelihood(self, X, y, par_bias,par_weights,hyper):
-        y_linear = cp.dot(X, par_weights) + par_bias
-        ll= cp.sum(self.cross_entropy(y_linear,y))
+    def log_likelihood(self, X, y, par,hyper):
+        y_linear = np.dot(X, par['weights']) + par['bias']
+        ll= np.sum(self.cross_entropy(y_linear,y))
         return ll
         
-    def loss(self, X, y, par_bias, par_weights,hyper):
-        return (self.log_likelihood(X, y, par_bias, par_weights,hyper)+self.log_prior(par_bias,par_weights,hyper))
+    def loss(self, X, y, par,hyper):
+        return (self.log_likelihood(X, y, par,hyper)+self.log_prior(par,hyper))
 
     def iterate_minibatches(self, X, y, batchsize):
         assert X.shape[0] == y.shape[0]
@@ -67,8 +68,8 @@ class SOFTMAX:
         loss_val=np.zeros((np.int(epochs)))
         momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
         gamma=0.9
-        n_data=np.float(y.shape[0])
-        for i in range(np.int(epochs)):
+        #n_data=np.float(y.shape[0])
+        for i in tqdm(range(np.int(epochs))):
             for batch in self.iterate_minibatches(X, y, batch_size):
                 X_batch, y_batch = batch
                 n_batch=np.float(y_batch.shape[0])
@@ -76,9 +77,10 @@ class SOFTMAX:
                 for var in par.keys():
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                     par[var]+=momemtum[var]
-            loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
+            #loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
             if verbose and (i%(epochs/10)==0):
-                print('loss: {0:.4f}'.format(loss_val[i]) )
+                pass
+                #print('loss: {0:.4f}'.format(loss_val[i]))
         return par,loss_val
 
     def predict(self, X,par,prob=False):

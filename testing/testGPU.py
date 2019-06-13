@@ -7,15 +7,15 @@ import numpy as np
 import sys
 sys.path.append("../") 
 import hamiltonian.utils as utils
-import hamiltonian.softmaxgputest as softmax
-import hamiltonian.sgldSimulatedQueueGPU as sampler
+import hamiltonian.softmaxGPU as softmax
+import hamiltonian.testGPUSGLD as sampler
 import h5py
 import time
 
 
 ################################## SIMULATED TEST ##################################
-num_classes = 5
-D=100
+num_classes = 20
+D=1000
 centers = [np.random.random_integers(0,10,D) for i in range(num_classes)]
 X, y = make_blobs(n_samples=250, centers=centers, cluster_std=10,random_state=40)
 
