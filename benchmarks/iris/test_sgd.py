@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 import sys 
 sys.path.append("./") 
 use_gpu=False
-import hamiltonian.softmaxcpu as softmax
+import hamiltonian.cpu.softmax as softmax
 import hamiltonian.utils as utils
 
 epochs = 1e3
