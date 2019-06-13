@@ -80,6 +80,7 @@ class SGLD(HMC):
                         posterior[var].append(q[var].reshape(-1))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
+                
             return posterior,logp_samples
             
     def iterate_minibatches(self,X, y, batchsize):

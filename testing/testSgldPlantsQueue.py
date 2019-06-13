@@ -37,7 +37,11 @@ aux2 = y_train.shape[1]
 ################################## PLANTS HDF5 ##################################
 
 SOFT=softmax.SOFTMAX()
+
+aux = time.time()
 par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=1e2,batch_size=50,verbose=True)
+print("tiempo en SGD: ",time.time()-aux)
+
 
 y_pred=SOFT.predict(X_test,par)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
@@ -48,15 +52,17 @@ mcmc=sampler.SGLD(aux1, aux2, SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(
 
 backend = 'test_sghmc_'
 #backend = None
-niter = 100
-burnin = 10
+niter = 36
+burnin = 12
 
+aux = time.time()
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
+print("tiempo en Multi-core: ", time.time()-aux)
 
 if backend:
     par_mean = mcmc.multicore_mean(posterior_sample, niter)
 
-    y_pred_mc=SOFT.predict(X_test.copy(),par_mean)
+    y_pred_mc=SOFT.predict(X_test,par_mean)
 
     print(classification_report(y_test[:].argmax(axis=1), y_pred_mc))
     print(confusion_matrix(y_test[:].argmax(axis=1), y_pred_mc))

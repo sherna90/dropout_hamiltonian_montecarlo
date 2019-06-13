@@ -14,8 +14,8 @@ import time
 
 
 ################################## SIMULATED TEST ##################################
-num_classes = 5
-D=100
+num_classes = 20
+D=1000
 centers = [np.random.random_integers(0,10,D) for i in range(num_classes)]
 X, y = make_blobs(n_samples=250, centers=centers, cluster_std=10,random_state=40)
 
@@ -40,15 +40,14 @@ print ('-------------------------------------------')
 
 mcmc=sampler.SGLD(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
-backend = 'prueba4_sghmc_'
-#backend = None
+#backend = 'test_sghmc_'
+backend = None
 niter = 1e3
 burnin = 1e2
 
 posterior_sample,logp_samples=mcmc.multicore_sample(niter,burnin,batch_size=50, backend=backend)
 
 if backend:
-    print("entre a backend...")
     par_mean = mcmc.multicore_mean(posterior_sample, niter)
 
     y_pred_mc=SOFT.predict(X_test.copy(),par_mean)
