@@ -1,12 +1,13 @@
 import numpy as np
 import scipy as sp
 import os
-from utils import *
+from hamiltonian.utils import *
 from numpy.linalg import inv
 from copy import deepcopy
 from multiprocessing import Pool,cpu_count, Process, Queue
 import os 
-from hamiltonian.cpu.hmc import hmc
+from hamiltonian.cpu.sgld import sgld
+
 from tqdm import tqdm, trange
 import h5py 
 import time
@@ -18,11 +19,11 @@ class sgld_multicore(sgld):
 
 
     def sample(self,niter=1e4,burnin=1e3,batchsize=20,backend=None,rng=None):
-        q=self.start
+        par=self.start
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
-                X_batch, y_batch = sgld_multicore.sample.q.get()
-                q=self.step(X_batch,y_batch,q,rng)
+                X_batch, y_batch = sgld_multicore.sample.queue.get()
+                par=self.step(X_batch,y_batch,par,rng)
         logp_samples=np.zeros(niter)
         if backend:
             backend_samples=h5py.File(backend)
@@ -32,13 +33,13 @@ class sgld_multicore(sgld):
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
-                    X_batch, y_batch = SGLD.sample.q.get()
-                    q=self.step(X_batch,y_batch,q,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
+                    X_batch, y_batch = sgld_multicore.sample.queue.get()
+                    par=self.step(X_batch,y_batch,par,rng)
+                    logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
                         posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
-                        posterior[var][-1,:]=q[var]
+                        posterior[var][-1,:]=par[var]
                     backend_samples.flush()
             backend_samples.close()
             return 1, logp_samples
@@ -46,11 +47,11 @@ class sgld_multicore(sgld):
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
-                    X_batch, y_batch = sgld_multicore.sample.q.get()
-                    q=self.step(X_batch,y_batch,q,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
+                    X_batch, y_batch = sgld_multicore.sample.queue.get()
+                    par=self.step(X_batch,y_batch,par,rng)
+                    logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
                     for var in self.start.keys():
-                        posterior[var].append(q[var].reshape(-1))
+                        posterior[var].append(par[var].reshape(-1))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
                 
@@ -63,8 +64,8 @@ class sgld_multicore(sgld):
                 excerpt = slice(start_idx, start_idx + batchsize)
                 q.put((self.X[excerpt], self.y[excerpt]))
 
-    def sample_init(self, q):
-        sgld_multicore.sample.q = q
+    def sample_init(self, _queue):
+        sgld_multicore.sample.queue = _queue
     
     def multicore_sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,ncores=cpu_count()):
         if backend:
@@ -72,9 +73,9 @@ class sgld_multicore(sgld):
         else:
             multi_backend = [backend]*ncores    
         rng = [np.random.RandomState(i) for i in range(ncores)]
-        q = Queue(maxsize=ncores)      
-        l = Process(target=sgld_multicore.iterate_minibatches, args=(self, q, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
-        p = Pool(None, sgld_multicore.sample_init, [self, q])
+        queue = Queue(maxsize=ncores)      
+        l = Process(target=sgld_multicore.iterate_minibatches, args=(self, queue, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
+        p = Pool(None, sgld_multicore.sample_init, [self, queue])
         l.start()
         results=p.map(unwrap_self_sgmcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[int(burnin/ncores)]*ncores,[batch_size]*ncores, multi_backend,rng))
         l.join() 

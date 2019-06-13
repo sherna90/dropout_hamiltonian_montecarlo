@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import os
-from utils import *
+from hamiltonian.utils import *
 from numpy.linalg import inv
 from copy import deepcopy
 from multiprocessing import Pool,cpu_count
@@ -14,12 +14,9 @@ import time
 import os
 
 def unwrap_self_mcmc(arg, **kwarg):
-    return HMC.sample(*arg, **kwarg)
+    return hmc.sample(*arg, **kwarg)
 
-def unwrap_self_mean(arg, **kwarg):
-    return HMC.sample_mean(*arg, **kwarg)
-
-class HMC:
+class hmc:
     def __init__(self, X,y,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
         self.X=X
         self.y=y

@@ -2,7 +2,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import numpy as np
-from utils import *
+from hamiltonian.utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp

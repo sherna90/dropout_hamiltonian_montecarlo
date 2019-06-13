@@ -14,13 +14,8 @@ import pandas as pd
 import time
 
 sys.path.append("./") 
-use_gpu=False
-if use_gpu:
-    import hamiltonian.softmax_gpu as softmax
-else:
-    import hamiltonian.softmax as softmax
-
-import hamiltonian.sghmc as sghmc
+import hamiltonian.cpu.softmax as softmax
+import hamiltonian.cpu.sgld_multicore as sampler
 import hamiltonian.utils as utils
 
 alpha=1./4.
@@ -38,14 +33,15 @@ num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
-mcmc=sghmc.SGHMC(X_train,y_train,softmax.log_likelihood, softmax.grad, start_p,hyper_p, path_length=path_length,verbose=1)
+model=softmax.SOFTMAX()
+inference=sampler.sgld_multicore(X_train,y_train,model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=1)
 t0=time.clock()
-posterior_sample=mcmc.multicore_sample(1e4,1e3,batch_size=50,backend=None,ncores=4)
+posterior_sample,logp_samples=inference.multicore_sample(1e4,1e3,batch_size=50,backend=None)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=softmax.predict(X_test,post_par)
+y_pred=model.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
