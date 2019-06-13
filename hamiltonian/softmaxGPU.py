@@ -32,23 +32,23 @@ class SOFTMAX:
         norms = cp.sum(exp, axis=1).reshape((-1,1))
         return exp / norms
 
-    def net(self, X,par_weights, par_bias):
-        y_linear = cp.dot(X, par_weights) + par_bias
+    def net(self, X,par):
+        y_linear = cp.dot(X, par['weights']) + par['bias']
         yhat = self.softmax(y_linear)
         return yhat
 
-    def grad(self, X,y,par_weights,par_bias,hyper):
-        yhat=self.net(X,par_weights,par_bias)
+    def grad(self, X,y,par,hyper):
+        yhat=self.net(X,par)
         diff = y-yhat
         #diff=diff[:,:-1]
         grad_w = cp.dot(X.T, diff)
         grad_b = cp.sum(diff, axis=0)
         grad={}
         grad['weights']=grad_w
-        grad['weights']+=hyper['alpha']*par_weights
+        grad['weights']+=hyper['alpha']*par['weights']
         grad['bias']=grad_b
-        grad['bias']+=hyper['alpha']*par_bias
-        return grad['weights'], grad['bias']	
+        grad['bias']+=hyper['alpha']*par['bias']
+        return grad	
     
     def log_likelihood(self, X, y, par,hyper):
         y_linear = np.dot(X, par['weights']) + par['bias']
@@ -62,26 +62,27 @@ class SOFTMAX:
         assert X.shape[0] == y.shape[0]
         for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
             excerpt = slice(start_idx, start_idx + batchsize)
-            yield X[excerpt], y[excerpt]
+            yield cp.asarray(X[excerpt]),cp.asarray(y[excerpt])
 
     def sgd(self, X, y,num_classes, par,hyper,eta=1e-2,epochs=1e2,batch_size=150,verbose=True):
+        par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
         loss_val=np.zeros((np.int(epochs)))
-        momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
+        momemtum={var:cp.zeros_like(par[var]) for var in par.keys()}
         gamma=0.9
         #n_data=np.float(y.shape[0])
         for i in tqdm(range(np.int(epochs))):
             for batch in self.iterate_minibatches(X, y, batch_size):
                 X_batch, y_batch = batch
                 n_batch=np.float(y_batch.shape[0])
-                grad_p=self.grad(X_batch,y_batch,par,hyper)
-                for var in par.keys():
+                grad_p=self.grad(X_batch,y_batch,par_gpu,hyper)
+                for var in par_gpu.keys():
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
-                    par[var]+=momemtum[var]
+                    par_gpu[var]+=momemtum[var]
             #loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
             if verbose and (i%(epochs/10)==0):
                 pass
                 #print('loss: {0:.4f}'.format(loss_val[i]))
-        return par,loss_val
+        return par_gpu,loss_val
 
     def predict(self, X,par,prob=False):
         yhat=self.net(X,par)

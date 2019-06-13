@@ -9,10 +9,8 @@ import time
 import h5py
 
 use_gpu=False
-if use_gpu:
-    import hamiltonian.softmax_gpu as softmax
-else:
-    import hamiltonian.softmax as softmax
+import hamiltonian.softmaxGPU as softmax
+import hamiltonian.utils as utils
 
 eta=1e-2
 epochs=100
@@ -37,14 +35,15 @@ start_p={'weights':np.zeros((D,K)),
 hyper_p={'alpha':alpha}
 
 start_time=time.time()
-par_sgd,loss_sgd=softmax.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
+model=softmax.SOFTMAX()
+par_sgd,loss_sgd=model.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
 elapsed_time=time.time()-start_time 
 print('SGD, time:',elapsed_time)
-y_pred=softmax.predict(X_test,par_sgd)
+y_pred=model.predict(X_test,par_sgd)
 cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
 print "-----------------------------------------------------------"
-start_time=time.time()
+""" start_time=time.time()
 par_sgd_dropout_05,loss_sgd_dropout_05=softmax.sgd_dropout(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
 elapsed_time=time.time()-start_time 
 print('SGD Dropout 0.5, time:',elapsed_time)
@@ -77,10 +76,6 @@ def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
                           cmap=plt.cm.gray_r):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
     if normalize:
         cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
@@ -128,7 +123,7 @@ plt.ylabel('log-loss')
 plt.xlabel('epochs')
 plt.legend(loc='best')
 plt.savefig('plants_fine_tuning.pdf',bbox_inches='tight')
-plt.close()
+plt.close() """
 
 
 plants_train.close()
