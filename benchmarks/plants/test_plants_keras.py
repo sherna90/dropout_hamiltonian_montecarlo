@@ -39,7 +39,7 @@ model.add(Dense(38, activation='softmax', input_shape=(X_train.shape[1],)))
 
 model.summary()
 
-sgd = SGD(lr=eta, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = RMSprop(lr=eta, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
@@ -48,8 +48,7 @@ history = model.fit(X_train, y_train,
                     batch_size=batch_size,
                     shuffle="batch",
                     epochs=epochs,
-                    verbose=1,
-                    validation_data=(X_test, y_test))
+                    verbose=False)
 score = model.evaluate(X_test, y_test, verbose=0)
 print('Test loss:', score[0])
 print('Test accuracy:', score[1])

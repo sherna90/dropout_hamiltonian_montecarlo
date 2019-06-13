@@ -7,6 +7,7 @@ from utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
+from tqdm import tqdm
 
 class SOFTMAX:
     def __init__(self):
@@ -39,8 +40,8 @@ class SOFTMAX:
         yhat=self.net(X,par)
         diff = y-yhat
         #diff=diff[:,:-1]
-        grad_w = np.dot(X.T, diff)
-        grad_b = np.sum(diff, axis=0)
+        grad_w = cp.dot(X.T, diff)
+        grad_b = cp.sum(diff, axis=0)
         grad={}
         grad['weights']=grad_w
         grad['weights']+=hyper['alpha']*par['weights']
@@ -67,7 +68,7 @@ class SOFTMAX:
         momemtum={var:np.zeros_like(par[var]) for var in par.keys()}
         gamma=0.9
         n_data=np.float(y.shape[0])
-        for i in range(np.int(epochs)):
+        for i in tqdm(range(np.int(epochs))):
             for batch in self.iterate_minibatches(X, y, batch_size):
                 X_batch, y_batch = batch
                 n_batch=np.float(y_batch.shape[0])
