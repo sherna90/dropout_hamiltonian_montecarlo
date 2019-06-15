@@ -9,7 +9,6 @@ from hamiltonian.cpu.hmc import hmc
 from tqdm import tqdm, trange
 import h5py 
 
-
 class sgld(hmc):
 
     def step(self,X_batch,y_batch,state,rng):
@@ -33,8 +32,8 @@ class sgld(hmc):
         return q_new
 
     def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None):
-        q=self.start
         rng = np.random.RandomState()
+        q=self.start
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
                 q=self.step(X_batch,y_batch,q,rng)
@@ -74,4 +73,12 @@ class sgld(hmc):
         for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
             excerpt = slice(start_idx, start_idx + batchsize)
             yield X[excerpt], y[excerpt]
+
+    def backend_mean(self, multi_backend, niter):
+        aux = []
+        for filename in multi_backend:
+            f=h5py.File(filename)
+            aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
+        mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+        return mean
         

@@ -13,9 +13,6 @@ import math
 import time
 import os
 
-def unwrap_self_mcmc(arg, **kwarg):
-    return hmc.sample(*arg, **kwarg)
-
 class hmc:
     def __init__(self, X,y,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
         self.X=X
@@ -122,13 +119,19 @@ class hmc:
 
 
     def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
-
+        accepted=[]
+        rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
         for i in tqdm(range(int(burnin))):
             q,p,a=self.step(q,p,rng)
+            accepted.append(a)
 
-        logp_samples=np.zeros(niter)
+        if self._verbose:
+            print('burn-in acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))  
+
+        del accepted[:]
+        logp_samples=np.zeros(int(niter))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
@@ -150,31 +153,16 @@ class hmc:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter))):
                 q,p,a=self.step(q,p,rng)
+                accepted.append(a)
                 logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
                 for var in self.start.keys():
                     posterior[var].append(q[var].reshape(-1))
+                if self._verbose:
+                    print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))        
+
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
             return posterior, logp_samples
-
-    def multicore_sample(self,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
-        if backend:
-            multi_backend = [backend+"_%i.h5" %i for i in range(ncores)]
-        else:
-            multi_backend = [backend]*ncores
-    
-        rng = [np.random.RandomState(i) for i in range(ncores)]
-
-        pool = Pool(processes=ncores)
-        results=pool.map(unwrap_self_mcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
-        
-        if not backend:
-            posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return posterior,logp_samples
-        else:
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return multi_backend,logp_samples
 
     def compute_mass_matrix(self,samples,alpha=0.9):
         posterior={var:[] for var in self.start.keys()}
@@ -206,14 +194,11 @@ class hmc:
         #print
         #print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
 
-    def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
-        pool = Pool(processes=ncores)
-        results= pool.map(unwrap_self_mean, zip([self]*ncores, multi_backend))
-        aux={var:((np.sum([r[var] for r in results],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
-        return aux
-
-    def sample_mean(self, filename):
-        f=h5py.File(filename)
-        aux = {var:np.sum(f[var],axis=0) for var in f.keys()}
-        return aux
+    def backend_mean(self, multi_backend, niter, ncores=cpu_count()):
+        aux = []
+        for filename in multi_backend:
+            f=h5py.File(filename)
+            aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
+        mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+        return mean
         
