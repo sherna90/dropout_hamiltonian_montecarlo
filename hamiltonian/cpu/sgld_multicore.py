@@ -4,7 +4,7 @@ import os
 from hamiltonian.utils import *
 from numpy.linalg import inv
 from copy import deepcopy
-from multiprocessing import Pool,cpu_count, Process, Queue
+from multiprocessing import Pool,cpu_count,Process,Queue
 import os 
 from hamiltonian.cpu.sgld import sgld
 
@@ -12,11 +12,10 @@ from tqdm import tqdm, trange
 import h5py 
 import time
 
-def unwrap_self_sgmcmc(arg, **kwarg):
+def unwrap_self_sgld(arg, **kwarg):
     return sgld_multicore.sample(*arg, **kwarg)
 
 class sgld_multicore(sgld):
-
 
     def sample(self,niter=1e4,burnin=1e3,batchsize=20,backend=None,rng=None):
         par=self.start
@@ -57,12 +56,12 @@ class sgld_multicore(sgld):
                 
             return posterior,logp_samples
 
-    def iterate_minibatches(self, q, batchsize, total):
+    def iterate_minibatches(self, queue, batchsize, total):
         for i in range(int(total)):
             #assert self.X.shape[0] == self.y.shape[0]
             for start_idx in range(0, self.X.shape[0] - batchsize + 1, batchsize):
                 excerpt = slice(start_idx, start_idx + batchsize)
-                q.put((self.X[excerpt], self.y[excerpt]))
+                queue.put((self.X[excerpt], self.y[excerpt]))
 
     def sample_init(self, _queue):
         sgld_multicore.sample.queue = _queue
@@ -77,7 +76,7 @@ class sgld_multicore(sgld):
         l = Process(target=sgld_multicore.iterate_minibatches, args=(self, queue, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
         p = Pool(None, sgld_multicore.sample_init, [self, queue])
         l.start()
-        results=p.map(unwrap_self_sgmcmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[int(burnin/ncores)]*ncores,[batch_size]*ncores, multi_backend,rng))
+        results=p.map(unwrap_self_sgld, zip([self]*ncores, [int(niter/ncores)]*ncores,[int(burnin/ncores)]*ncores,[batch_size]*ncores, multi_backend,rng))
         l.join() 
         if not backend:
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
@@ -86,11 +85,3 @@ class sgld_multicore(sgld):
         else:
             logp_samples=np.concatenate([r[1] for r in results],axis=0)
             return multi_backend,logp_samples
-
-    def multicore_mean(self, multi_backend, niter, ncores=cpu_count()):
-        aux = []
-        for filename in multi_backend:
-            f=h5py.File(filename)
-            aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
-        mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
-        return mean
