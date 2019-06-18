@@ -8,7 +8,7 @@ import sys
 sys.path.append("../../") 
 import hamiltonian.utils as utils
 import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sghmc as sampler
+import hamiltonian.cpu.sghmc_multicore as sampler
 import h5py
 import time
 
@@ -35,7 +35,7 @@ print(classification_report(y_test.copy().argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
 print ('-------------------------------------------')
 
-mcmc=sampler.SGHMC(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
+mcmc=sampler.sghmc_multicore(X_train,y_train,SOFT.loss, SOFT.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
 #backend = 'test_sghmc_'
 backend = None

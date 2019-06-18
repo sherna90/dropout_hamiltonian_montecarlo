@@ -17,10 +17,10 @@ def unwrap_self_sgld(arg, **kwarg):
 
 class sgld_multicore(sgld):
 
-    def sample(self,niter=1e4,burnin=1e3,batchsize=20,backend=None,rng=None):
+    def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
         par=self.start
         for i in tqdm(range(int(burnin)),total=int(burnin)):
-            for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+            for auxiliar in range(len(range(0, self.X.shape[0] - batch_size + 1, batch_size))):
                 X_batch, y_batch = sgld_multicore.sample.queue.get()
                 par=self.step(X_batch,y_batch,par,rng)
         logp_samples=np.zeros(niter)
@@ -31,7 +31,7 @@ class sgld_multicore(sgld):
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+                for auxiliar in range(len(range(0, self.X.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     par=self.step(X_batch,y_batch,par,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
@@ -45,7 +45,7 @@ class sgld_multicore(sgld):
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for auxiliar in range(len(range(0, self.X.shape[0] - batchsize + 1, batchsize))):
+                for auxiliar in range(len(range(0, self.X.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     par=self.step(X_batch,y_batch,par,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
@@ -56,11 +56,11 @@ class sgld_multicore(sgld):
                 
             return posterior,logp_samples
 
-    def iterate_minibatches(self, queue, batchsize, total):
+    def iterate_minibatches(self, queue, batch_size, total):
         for i in range(int(total)):
             #assert self.X.shape[0] == self.y.shape[0]
-            for start_idx in range(0, self.X.shape[0] - batchsize + 1, batchsize):
-                excerpt = slice(start_idx, start_idx + batchsize)
+            for start_idx in range(0, self.X.shape[0] - batch_size + 1, batch_size):
+                excerpt = slice(start_idx, start_idx + batch_size)
                 queue.put((self.X[excerpt], self.y[excerpt]))
 
     def sample_init(self, _queue):

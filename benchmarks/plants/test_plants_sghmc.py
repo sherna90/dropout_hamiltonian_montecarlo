@@ -12,21 +12,22 @@ import pandas as pd
 import time
 import h5py 
 
-sys.path.append("./") 
-import hamiltonian.softmax as softmax
-import hamiltonian.sgld as sampler
+sys.path.append("../../") 
+import hamiltonian.cpu.softmax as softmax
+import hamiltonian.cpu.sgld_multicore as sampler
 import hamiltonian.utils as utils
 
 path_length=10
 epochs=20
-batch_size=1000
+batch_size=50
 alpha=1e-2
-data_path = 'data/'
 
-plants_train=h5py.File('data/train_features_labels.h5','r')
+data_path = '../../data/'
+
+plants_train=h5py.File(data_path+'train_features_labels.h5','r')
 X_train=plants_train['train_features']
 y_train=plants_train['train_labels']
-plants_test=h5py.File('data/validation_features_labels.h5','r')
+plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
 X_test=plants_test['validation_features']
 y_test=plants_test['validation_labels']
 
@@ -39,9 +40,14 @@ start_p={'weights':np.zeros((D,K)),
         'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 
-mcmc=sampler.SGLD(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=1,verbose=1)
+model=softmax.SOFTMAX()
+mcmc=sampler.sgld_multicore(X_train,y_train,model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.sample(1e3,1e2,batch_size=batch_size,backend='results/sgmcmc_plants.h5')
+
+#backend = "results/sgmcmc_plants"
+backend = None
+
+posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size,backend=backend)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

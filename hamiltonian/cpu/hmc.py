@@ -120,7 +120,8 @@ class hmc:
 
     def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
         accepted=[]
-        rng = np.random.RandomState()
+        if rng == None:
+            rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
         self.find_reasonable_epsilon(q,rng)
         for i in tqdm(range(int(burnin))):
