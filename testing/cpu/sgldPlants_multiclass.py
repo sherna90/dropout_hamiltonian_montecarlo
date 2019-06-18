@@ -8,7 +8,7 @@ import sys
 sys.path.append("../../")
 
 import hamiltonian.utils as utils
-import hamiltonian.softmaxcpu as softmax
+import hamiltonian.cpu.softmax as softmax
 import hamiltonian.cpu.sgldPlants as sampler
 import h5py
 import time
