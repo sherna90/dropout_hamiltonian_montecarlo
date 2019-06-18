@@ -13,15 +13,10 @@ import sys
 import pandas as pd
 import time
 
-sys.path.append("./") 
-use_gpu=False
-if use_gpu:
-    import hamiltonian.softmax_gpu as softmax
-else:
-    import hamiltonian.softmax as softmax
-
-import hamiltonian.hmc as hmc
-import hamiltonian.metropolis as mc
+sys.path.append("../../") 
+import hamiltonian.cpu.softmax as softmax
+import hamiltonian.cpu.hmc as sampler
+import hamiltonian.utils as utils
 import hamiltonian.utils as utils
 from scipy import stats
 
@@ -44,14 +39,15 @@ D=X_train.shape[1]
 start_p={'weights':np.zeros((D,K)),
         'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-mcmc=hmc.HMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=10,verbose=1)
+model=softmax.SOFTMAX()
+mcmc=sampler.hmc(X_train,y_train,model.log_likelihood, model.grad, start_p,hyper_p, path_length=10,verbose=0)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.multicore_sample(1e4,1e2)
+posterior_sample,logp_samples=mcmc.sample(1e4,1e2)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=softmax.predict(X_test,post_par)
+y_pred=model.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 

@@ -9,7 +9,7 @@ import time
 import h5py
 
 use_gpu=False
-import hamiltonian.softmaxGPU as softmax
+import hamiltonian.cpu.softmax as softmax
 import hamiltonian.utils as utils
 
 eta=1e-2
