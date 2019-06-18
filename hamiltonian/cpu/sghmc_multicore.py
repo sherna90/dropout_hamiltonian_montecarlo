@@ -1,7 +1,7 @@
 import numpy as np
 import scipy as sp
 import os
-from utils import *
+from hamiltonian.utils import *
 from numpy.linalg import inv
 from copy import deepcopy
 from multiprocessing import Pool,cpu_count,Process,Queue

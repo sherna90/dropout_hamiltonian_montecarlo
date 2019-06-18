@@ -71,14 +71,15 @@ fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, alg
 
 post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0)}
 
-y_pred=softmax.predict(X_test,post_par)
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
+#y_pred=softmax.predict(X_test,post_par)
+#print(classification_report(y_test, y_pred))
+#print(confusion_matrix(y_test, y_pred))
 
 import pandas as pd
 
 b_cols=columns=['b1', 'b2','b3']
 b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
+print(b_sample.describe())
 #w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
 sns.pairplot(b_sample)
 plt.show()
