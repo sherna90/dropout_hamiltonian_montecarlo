@@ -6,6 +6,7 @@ from utils import *
 from copy import deepcopy
 from numpy.linalg import norm
 from scipy.special import logsumexp
+import time
 
 class LOGISTIC:
     def __init__(self):

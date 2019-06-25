@@ -25,7 +25,7 @@ hyper_p={'alpha':alpha}
 ################################
 
 SOFT=softmax.SOFTMAX()
-par,loss=SOFT.sgd(X_train.copy(), y_train.copy(),K, start_p, hyper_p, eta=1e-5,epochs=1e2,batch_size=50,verbose=True)
+par,loss=SOFT.sgd(X_train.copy(), y_train.copy(),K, start_p, hyper_p, eta=1e-5,epochs=1e3,batch_size=50,verbose=True)
 
 y_pred=SOFT.predict(X_test.copy(),par)
 print(classification_report(y_test.copy().argmax(axis=1), y_pred))
@@ -38,3 +38,5 @@ softmax_reg.fit(X_train.copy(),np.argmax(y_train.copy(),axis=1))
 y_pred2 = softmax_reg.predict(X_test.copy())
 print(classification_report(y_test.copy().argmax(axis=1), y_pred2))
 print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred2))
+
+print("LISTO!")
