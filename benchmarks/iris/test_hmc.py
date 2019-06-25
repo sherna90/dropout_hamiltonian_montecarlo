@@ -42,7 +42,7 @@ hyper_p={'alpha':alpha}
 model=softmax.SOFTMAX()
 mcmc=sampler.hmc(X_train,y_train,model.log_likelihood, model.grad, start_p,hyper_p, path_length=10,verbose=0)
 t0=time.clock()
-posterior_sample,logp_samples=mcmc.sample(1e4,1e2)
+posterior_sample,logp_samples=mcmc.sample(1e3,1e2)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
