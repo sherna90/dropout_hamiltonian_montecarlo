@@ -21,7 +21,7 @@ hyper_p={'alpha':alpha}
 ####################
 
 LOG=logistic.LOGISTIC()
-par,loss=LOG.sgd(X_train.copy(), y_train.copy(),start_p, hyper_p, eta=1e-5,epochs=1e4,batch_size=50,verbose=True)
+par,loss=LOG.sgd(X_train.copy(), y_train.copy(),start_p, hyper_p, eta=1e-5,epochs=1e3,batch_size=50,verbose=True)
 
 y_pred=LOG.predict(X_test.copy(),par)
 print(classification_report(y_test.copy(), y_pred))
@@ -34,3 +34,5 @@ log_reg.fit(X_train,y_train)
 y_pred2 = log_reg.predict(X_test)
 print(classification_report(y_test, y_pred2))
 print(confusion_matrix(y_test, y_pred2))
+
+print("LISTO!")

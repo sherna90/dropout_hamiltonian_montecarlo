@@ -26,14 +26,14 @@ y_pred=LOG.predict(X_test.copy(), par)
 print(classification_report(y_test.copy(), y_pred))
 print(confusion_matrix(y_test.copy(), y_pred))
 
-mcmc=sampler.hmc(X_train.copy(),y_train.copy(),LOG.loss, LOG.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
+mcmc=sampler.hmc(LOG.loss, LOG.grad, start_p.copy(),hyper_p.copy(), path_length=1,verbose=0)
 
 #backend = 'test_sghmc_'
 backend = None
 niter = 1e3
 burnin = 1e2
 
-posterior_sample,logp_samples=mcmc.sample(niter,burnin, backend=backend)
+posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin, backend=backend)
 
 if backend:
     par_mean = mcmc.backend_mean(posterior_sample, niter)
