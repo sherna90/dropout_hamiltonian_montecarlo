@@ -15,7 +15,7 @@ import time
 
 sys.path.append("../../") 
 import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sghmc_multicore as sampler
+import hamiltonian.cpu.sghmc as sampler
 import hamiltonian.utils as utils
 
 alpha=1./4.
@@ -33,13 +33,13 @@ num_classes=len(classes)
 start_p={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
 hyper_p={'alpha':alpha}
+
 model=softmax.SOFTMAX()
-inference=sampler.sghmc_multicore(X_train,y_train,model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
+inference=sampler.sghmc(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
 t0=time.clock()
-posterior_sample,logp_samples=inference.multicore_sample(1e4,1e3,batch_size=50,backend=None)
+posterior_sample,logp_samples=inference.sample(X_train,y_train,1e3,1e2,backend=None)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
-
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 y_pred=model.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))

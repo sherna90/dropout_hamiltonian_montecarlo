@@ -14,9 +14,7 @@ import time
 import os
 
 class hmc:
-    def __init__(self, X,y,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
-        self.X=X
-        self.y=y
+    def __init__(self,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
         self.start = start_p
         self.hyper = hyper_p
         self.step_size = 1.0
@@ -38,7 +36,7 @@ class hmc:
         self._verbose=verbose
 
 
-    def step(self,state,momentum,rng):
+    def step(self,X_train, y_train,state,momentum,rng):
         #n_steps =max(1, int(self.path_length / self.step_size))
         n_steps=5
         direction = 1.0 if rng.rand() > 0.5 else -1.0
@@ -48,9 +46,9 @@ class hmc:
         q_new = deepcopy(q)
         p_new = deepcopy(p)
         for i in range(n_steps):
-            q_new, p_new=self.leapfrog_nocache(q_new, p_new, epsilon)
+            q_new, p_new=self.leapfrog_nocache(X_train, y_train,q_new, p_new, epsilon)
             #q_new, p_new,cache=self.leapfrog(q_new, p_new, epsilon,cache)
-        acceptprob=self.accept(q, q_new, p, p_new)
+        acceptprob=self.accept(X_train, y_train,q, q_new, p, p_new)
         if np.isfinite(acceptprob) and (rng.rand() < acceptprob): 
             q = q_new
             p = p_new
@@ -60,37 +58,37 @@ class hmc:
     def acceptance_rate(self,acceptprob):
         return np.mean(acceptprob)
 
-    def leapfrog(self,q, p,epsilon,cache):
+    def leapfrog(self,X_train, y_train,q, p,epsilon,cache):
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         cache_new=deepcopy(cache)
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
+        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
         eps=1e-8
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (np.sqrt(cache_new[var]) + eps)
             q_new[var]+= epsilon[var]*p_new[var]/ (np.sqrt(cache_new[var]) + eps)
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
+        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (np.sqrt(cache_new[var]) + eps)
         return q_new, p_new, cache_new
 
-    def leapfrog_nocache(self,q, p,epsilon):
+    def leapfrog_nocache(self,X_train, y_train,q, p,epsilon):
         q_new=deepcopy(q)
         p_new=deepcopy(p)
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
+        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]
             q_new[var]+= epsilon[var]*p_new[var]
-        grad_q=self.grad(self.X,self.y,q_new,self.hyper)
+        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]
         return q_new, p_new
 
-    def accept(self,current_q, proposal_q, current_p, proposal_p):
-        E_new = self.energy(proposal_q,proposal_p)
-        E_current = self.energy(current_q,current_p)
+    def accept(self,X_train, y_train,current_q, proposal_q, current_p, proposal_p):
+        E_new = self.energy(X_train, y_train,proposal_q,proposal_p)
+        E_current = self.energy(X_train, y_train,current_q,current_p)
         A = min(1,np.exp(E_current - E_new))
         return A
 
@@ -102,9 +100,9 @@ class hmc:
             K-=0.5*np.sum(np.square(p[var]))
         return K
 
-    def energy(self, q, p):
+    def energy(self, X_train, y_train,q, p):
         K=-self.potential_energy(p)
-        U=-self.logp(self.X,self.y,q,self.hyper)
+        U=-self.logp(X_train,y_train,q,self.hyper)
         return K+U 
 
 
@@ -118,14 +116,14 @@ class hmc:
         return momentum
 
 
-    def sample(self,niter=1e4,burnin=1e3,backend=None,rng=None):
+    def sample(self,X_train, y_train,niter=1e4,burnin=1e3,backend=None,rng=None):
         accepted=[]
         if rng == None:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
-        self.find_reasonable_epsilon(q,rng)
+        self.find_reasonable_epsilon(X_train, y_train,q,rng)
         for i in tqdm(range(int(burnin))):
-            q,p,a=self.step(q,p,rng)
+            q,p,a=self.step(X_train, y_train,q,p,rng)
             accepted.append(a)
 
         if self._verbose:
@@ -142,7 +140,7 @@ class hmc:
 
             for i in tqdm(range(int(niter))):
                 q,p,a=self.step(q,p,rng)
-                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
+                logp_samples[i]=self.logp(X_train,y_train,q,self.hyper)
                 for var in self.start.keys():
                     param_shape=self.start[var].shape
                     posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
@@ -153,14 +151,14 @@ class hmc:
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter))):
-                q,p,a=self.step(q,p,rng)
+                q,p,a=self.step(X_train, y_train,q,p,rng)
                 accepted.append(a)
-                logp_samples[i]=self.logp(self.X,self.y,q,self.hyper)
+                logp_samples[i]=self.logp(X_train,y_train,q,self.hyper)
                 for var in self.start.keys():
                     posterior[var].append(q[var].reshape(-1))
                 if self._verbose:
                     print('acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))        
-
+                    
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
             return posterior, logp_samples
@@ -175,23 +173,23 @@ class hmc:
             self._mass_matrix[var]=alpha*self._mass_matrix[var]+(1-alpha)*np.var(posterior[var],axis=0)
             self._inv_mass_matrix[var]=1./self._mass_matrix[var]
             
-    def find_reasonable_epsilon(self,state,rng):
+    def find_reasonable_epsilon(self,X_train, y_train,state,rng):
         q =state.copy()
         p = self.draw_momentum(rng)
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
         cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
         #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
-        q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
-        acceptprob=self.accept(q, q_new, p, p_new)
+        q_new, p_new = self.leapfrog_nocache(X_train, y_train,q, p, epsilon)
+        acceptprob=self.accept(X_train, y_train,q, q_new, p, p_new)
         while (0.5 > acceptprob):
             direction*=1.0
             self.step_size*=0.5
             epsilon={var:direction*self.step_size for var in self.start.keys()}
             cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
             #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
-            q_new, p_new = self.leapfrog_nocache(q, p, epsilon)
-            acceptprob=self.accept(q, q_new, p, p_new)
+            q_new, p_new = self.leapfrog_nocache(X_train, y_train,q, p, epsilon)
+            acceptprob=self.accept(X_train, y_train,q, q_new, p, p_new)
         #print
         #print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
 

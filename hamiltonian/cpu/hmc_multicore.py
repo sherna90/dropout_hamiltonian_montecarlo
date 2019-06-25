@@ -19,7 +19,7 @@ def unwrap_self_hmc(arg, **kwarg):
 
 class hmc_multicore(hmc):
     
-    def multicore_sample(self,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
+    def multicore_sample(self,X_train,y_train,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
         if backend:
             multi_backend = [backend+"_%i.h5" %i for i in range(ncores)]
         else:
@@ -28,7 +28,7 @@ class hmc_multicore(hmc):
         rng = [np.random.RandomState(i) for i in range(ncores)]
 
         pool = Pool(processes=ncores)
-        results=pool.map(unwrap_self_hmc, zip([self]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
+        results=pool.map(unwrap_self_hmc, zip([self]*ncores,[X_train]*ncores,[y_train]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
         
         if not backend:
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}

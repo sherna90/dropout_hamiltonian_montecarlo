@@ -14,7 +14,7 @@ import h5py
 
 sys.path.append("../../") 
 import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sgld_multicore as sampler
+import hamiltonian.cpu.sghmc as sampler
 import hamiltonian.utils as utils
 
 path_length=10
@@ -41,13 +41,12 @@ start_p={'weights':np.zeros((D,K)),
 hyper_p={'alpha':alpha}
 
 model=softmax.SOFTMAX()
-mcmc=sampler.sgld_multicore(X_train,y_train,model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=1)
+mcmc=sampler.sghmc(model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=1)
 t0=time.clock()
 
 #backend = "results/sgmcmc_plants"
 backend = None
-
-posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size,backend=backend)
+posterior_sample,logp_samples=mcmc.sample(X_train,y_train,1e3,1e2,batch_size,backend=backend)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 

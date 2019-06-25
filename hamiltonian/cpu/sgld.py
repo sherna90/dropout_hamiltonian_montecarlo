@@ -11,18 +11,18 @@ import h5py
 
 class sgld(hmc):
 
-    def step(self,X_batch,y_batch,state,rng):
+    def step(self,y_train,X_batch,y_batch,state,rng):
         q_new = deepcopy(state)
-        n_data=np.float(self.y.shape[0])
+        n_data=np.float(y_train.shape[0])
         epsilon={var:self.step_size/n_data for var in self.start.keys()}
-        q_new = self.langevin(q_new, epsilon,X_batch,y_batch,rng)
+        q_new = self.langevin(y_train,q_new, epsilon,X_batch,y_batch,rng)
         return q_new
 
-    def langevin(self,q,epsilon,X_batch,y_batch,rng):
+    def langevin(self,y_train,q,epsilon,X_batch,y_batch,rng):
         q_new=deepcopy(q)
         grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
         n_batch=np.float(y_batch.shape[0])
-        n_data=np.float(self.y.shape[0])
+        n_data=np.float(y_train.shape[0])
         for var in self.start.keys():
             noise_scale = 2.0*epsilon[var]
             sigma = np.sqrt(max(noise_scale, 1e-16)) 
@@ -31,12 +31,12 @@ class sgld(hmc):
             q_new[var]+=(n_data/n_batch)*epsilon[var] * grad_q[var]+nu
         return q_new
 
-    def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None):
+    def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None):
         rng = np.random.RandomState()
         q=self.start
         for i in tqdm(range(int(burnin)),total=int(burnin)):
-            for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                q=self.step(X_batch,y_batch,q,rng)
+            for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
+                q=self.step(y_train,X_batch,y_batch,q,rng)
 
         logp_samples=np.zeros(int(niter))
         if backend:
@@ -46,8 +46,8 @@ class sgld(hmc):
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                    q=self.step(X_batch,y_batch,q,rng)
+                for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
+                    q=self.step(y_train,X_batch,y_batch,q,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
@@ -59,8 +59,8 @@ class sgld(hmc):
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
-                for X_batch, y_batch in self.iterate_minibatches(self.X, self.y, batch_size):
-                    q=self.step(X_batch,y_batch,q,rng)
+                for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
+                    q=self.step(y_train,X_batch,y_batch,q,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         posterior[var].append(q[var].reshape(-1))
@@ -68,11 +68,11 @@ class sgld(hmc):
                 posterior[var]=np.array(posterior[var])
             return posterior,logp_samples
             
-    def iterate_minibatches(self,X, y, batchsize):
-        assert X.shape[0] == y.shape[0]
-        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
+    def iterate_minibatches(self,X_train,y_train,batchsize):
+        assert X_train.shape[0] == y_train.shape[0]
+        for start_idx in range(0, X_train.shape[0] - batchsize + 1, batchsize):
             excerpt = slice(start_idx, start_idx + batchsize)
-            yield X[excerpt], y[excerpt]
+            yield X_train[excerpt], y_train[excerpt]
 
     def backend_mean(self, multi_backend, niter):
         aux = []
