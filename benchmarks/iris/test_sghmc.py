@@ -3,6 +3,7 @@ warnings.filterwarnings("ignore")
 
 from sklearn import datasets
 import numpy as np
+import cupy as cp
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -35,13 +36,14 @@ start_p={'weights':np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 
 model=softmax.SOFTMAX()
-inference=sampler.sghmc(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
+inference=sampler.sgld(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
 t0=time.clock()
 posterior_sample,logp_samples=inference.sample(X_train,y_train,1e3,1e2,backend=None)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=model.predict(X_test,post_par)
+par_gpu={var:cp.asarray(post_par[var]) for var in post_par.keys()}
+y_pred=cp.asnumpy(model.predict(X_test,par_gpu))
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
@@ -58,5 +60,5 @@ print(w_sample.describe())
 sns.distplot(b_sample['b1'])
 sns.distplot(b_sample['b2'])
 sns.distplot(b_sample['b3'])
-#sns.pairplot(b_sample)
+sns.pairplot(b_sample)
 plt.show()
