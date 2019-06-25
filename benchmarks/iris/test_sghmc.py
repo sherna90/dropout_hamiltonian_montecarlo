@@ -14,8 +14,8 @@ import pandas as pd
 import time
 
 sys.path.append("../../") 
-import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sghmc as sampler
+import hamiltonian.gpu.softmax as softmax
+import hamiltonian.gpu.sgld as sampler
 import hamiltonian.utils as utils
 
 alpha=1./4.
