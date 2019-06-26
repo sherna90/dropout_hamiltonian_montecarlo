@@ -7,8 +7,8 @@ import numpy as np
 import sys
 sys.path.append("../../") 
 import hamiltonian.utils as utils
-import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sgld_multicore as sampler
+import hamiltonian.gpu.softmax as softmax
+import hamiltonian.gpu.sgld_multicore as sampler
 import h5py
 import time
 
