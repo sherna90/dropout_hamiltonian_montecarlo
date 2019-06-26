@@ -11,24 +11,23 @@ import numpy as np
 import time
 
 import hamiltonian.utils as utils
-import hamiltonian.cpu.softmax as softmax
-
-import hamiltonian.cpu.sgld_multicore as sampler
+import hamiltonian.gpu.softmax as softmax
 
 alpha=1./4.
 hyper_p={'alpha':alpha}
 
 
-niter = 1e4
-burnin=1e2
-n_samples = [1000, 10000, 50000, 100000]
-D_list = [10, 50,100]
-num_classes = 10
+niter = 1e3
+n_samples = [100, 1000, 5000, 10000]
+D_list = [10, 50]
+
+
 
 df = pd.DataFrame(columns=['D', 'n', 'Time'])
 
 cont = 0
 SOFT=softmax.SOFTMAX()
+num_classes = 3
 
 for j in range(len(D_list)):
         D=D_list[j]
@@ -41,12 +40,11 @@ for j in range(len(D_list)):
                 alpha=1./4.
                 start_p={'weights':np.zeros((D,num_classes)),'bias':np.zeros((num_classes))}
                 hyper_p={'alpha':alpha}
-                mcmc=sampler.sgld_multicore(SOFT.loss, SOFT.grad, start_p,hyper_p, path_length=1,verbose=0)
                 start=time.time()
-                posterior_sample,logp_samples=mcmc.multicore_sample(X_train,y_train,niter,burnin,batch_size=50, backend=None)
+                par,loss=SOFT.sgd(X_train, y_train,num_classes, start_p, hyper_p, eta=1e-5,epochs=niter,batch_size=50,verbose=False)
                 end = time.time() - start
                 print("{} {} {}".format(D_list[j], n_samples[i], end))
                 df.loc[cont] = [D_list[j], n_samples[i], end]
                 cont += 1
 
-df.to_csv('informe-sgld-multicore-ram.csv', sep=',')
+df.to_csv('informe-sgd-gpu-ram.csv', sep=',')

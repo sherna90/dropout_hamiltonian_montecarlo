@@ -19,18 +19,16 @@ alpha=1./4.
 hyper_p={'alpha':alpha}
 
 
-niter = 1e3
+niter = 1e4
 burnin=1e2
-n_samples = [100, 1000, 5000, 10000]
-D_list = [10, 50]
-
-
+n_samples = [1000, 10000, 50000, 100000]
+D_list = [10, 50,100]
+num_classes = 10
 
 df = pd.DataFrame(columns=['D', 'n', 'Time'])
 
 cont = 0
 SOFT=softmax.SOFTMAX()
-num_classes = 3
 
 for j in range(len(D_list)):
         D=D_list[j]
