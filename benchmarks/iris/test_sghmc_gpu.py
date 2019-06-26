@@ -15,8 +15,8 @@ import pandas as pd
 import time
 
 sys.path.append("../../") 
-import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sgld as sampler
+import hamiltonian.gpu.softmax as softmax
+import hamiltonian.gpu.sgld as sampler
 import hamiltonian.utils as utils
 
 alpha=1./4.
@@ -38,11 +38,12 @@ hyper_p={'alpha':alpha}
 model=softmax.SOFTMAX()
 inference=sampler.sgld(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
 t0=time.clock()
-posterior_sample,logp_samples=inference.sample(X_train,y_train,2e4,2e3,backend=None)
+posterior_sample,logp_samples=inference.sample(X_train,y_train,2e4,1e3,backend=None)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=model.predict(X_test,post_par)
+par_gpu={var:cp.asarray(post_par[var]) for var in post_par.keys()}
+y_pred=cp.asnumpy(model.predict(X_test,par_gpu))
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 

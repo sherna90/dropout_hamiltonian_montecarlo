@@ -11,10 +11,10 @@ sys.path.append("../../")
 import hamiltonian.gpu.softmax as softmax
 import hamiltonian.utils as utils
 
-epochs = 1e3
-eta=1e-4
+epochs = 1e4
+eta=1e-3
 batch_size=50
-alpha=1/4.
+alpha=1/10.
 
 iris = datasets.load_iris()
 data = iris.data  

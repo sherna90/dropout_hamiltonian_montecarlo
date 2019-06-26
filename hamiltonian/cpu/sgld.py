@@ -28,7 +28,7 @@ class sgld(hmc):
             sigma = np.sqrt(max(noise_scale, 1e-16)) 
             dim=(np.array(self.start[var])).size
             nu=sigma*rng.normal(0,sigma,dim).reshape(q_new[var].shape)
-            q_new[var]+=(n_data/n_batch)*epsilon[var] * grad_q[var]+nu
+            q_new[var]+=(n_data/n_batch)*1e-8 * grad_q[var]+nu
         return q_new
 
     def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None):
