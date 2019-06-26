@@ -37,9 +37,9 @@ hyper_p={'alpha':alpha}
 
 model=softmax.SOFTMAX()
 inference=sampler.sgld_multicore(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
-t0=time.clock()
-posterior_sample,logp_samples=inference.multicore_sample(X_train,y_train,1e3,1e2,backend=None)
-t1=time.clock()
+t0=time.time()
+posterior_sample,logp_samples=inference.multicore_sample(X_train,y_train,2e4,2e3,backend=None)
+t1=time.time()
 print("Ellapsed Time : ",t1-t0)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 #Verificar linea cp

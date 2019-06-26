@@ -7,16 +7,16 @@ import cupy as cp
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-import seaborn as sns
-sns.set(color_codes=True)
+#import matplotlib.pyplot as plt
+#import seaborn as sns
+#sns.set(color_codes=True)
 import sys 
 import pandas as pd
 import time
 
 sys.path.append("../../") 
 import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sgld as sampler
+import hamiltonian.cpu.sgld_multicore as sampler
 import hamiltonian.utils as utils
 
 alpha=1./4.
@@ -36,10 +36,10 @@ start_p={'weights':np.random.randn(D,num_classes),
 hyper_p={'alpha':alpha}
 
 model=softmax.SOFTMAX()
-inference=sampler.sgld(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
-t0=time.clock()
-posterior_sample,logp_samples=inference.sample(X_train,y_train,2e4,2e3,backend=None)
-t1=time.clock()
+inference=sampler.sgld_multicore(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
+t0=time.time()
+posterior_sample,logp_samples=inference.multicore_sample(X_train,y_train,2e4,2e3,backend=None)
+t1=time.time()
 print("Ellapsed Time : ",t1-t0)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 y_pred=model.predict(X_test,post_par)
@@ -56,8 +56,8 @@ w_sample = pd.DataFrame(posterior_sample['weights'],columns=w_cols)
 
 print(b_sample.describe())
 print(w_sample.describe())
-sns.distplot(b_sample['b1'])
-sns.distplot(b_sample['b2'])
-sns.distplot(b_sample['b3'])
-sns.pairplot(b_sample)
-plt.show()
+#sns.distplot(b_sample['b1'])
+#sns.distplot(b_sample['b2'])
+#sns.distplot(b_sample['b3'])
+#sns.pairplot(b_sample)
+#plt.show()
