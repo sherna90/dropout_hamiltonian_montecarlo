@@ -31,22 +31,24 @@ cont = 0
 SOFT=softmax.SOFTMAX()
 
 for j in range(len(D_list)):
-        D=D_list[j]
-        for i in range(len(n_samples)):
-                centers = [np.random.random_integers(0,10,D) for i in range(num_classes)]
-                X, y = make_blobs(n_samples=n_samples[i], centers=centers, cluster_std=1,random_state=40)
-                y=utils.one_hot(y,num_classes)
-                X = (X - X.mean(axis=0)) / X.std(axis=0)
-                X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
-                alpha=1./4.
-                start_p={'weights':np.zeros((D,num_classes)),'bias':np.zeros((num_classes))}
-                hyper_p={'alpha':alpha}
-                mcmc=sampler.sgld(SOFT.loss, SOFT.grad, start_p,hyper_p, path_length=1,verbose=0)
-                start=time.time()
-                posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_size=50, backend=None)
-                end = time.time() - start
-                print("{} {} {}".format(D_list[j], n_samples[i], end))
-                df.loc[cont] = [D_list[j], n_samples[i], end]
-                cont += 1
+    D=D_list[j]
+    for i in range(len(n_samples)):
+        centers = [np.random.random_integers(0,10,D) for i in range(num_classes)]
+        X, y = make_blobs(n_samples=n_samples[i], centers=centers, cluster_std=1,random_state=40)
+        y=utils.one_hot(y,num_classes)
+        X = (X - X.mean(axis=0)) / X.std(axis=0)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+        alpha=1./4.
+        start_p={'weights':np.zeros((D,num_classes)),'bias':np.zeros((num_classes))}
+        hyper_p={'alpha':alpha}
+        mcmc=sampler.sgld(SOFT.loss, SOFT.grad, start_p,hyper_p, path_length=1,verbose=0)
+        start=time.time()
+        backend = 'sgld_{}_{}.h5'.format(D_list[j], n_samples[i])
+        print(backend)
+        posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_size=50, backend=None)
+        end = time.time() - start
+        print("{} {} {}".format(D_list[j], n_samples[i], end))
+        df.loc[cont] = [D_list[j], n_samples[i], end]
+        cont += 1
 
 df.to_csv('informe-gpu-ram.csv', sep='\t')
