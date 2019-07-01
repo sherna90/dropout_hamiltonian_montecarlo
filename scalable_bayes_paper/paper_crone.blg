@@ -1,0 +1,52 @@
+This is BibTeX, Version 0.99d (TeX Live 2017/Debian)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
+The top-level auxiliary file: paper_crone.aux
+The style file: vancouver-crone.bst
+Illegal, another \bibstyle command---line 41 of file paper_crone.aux
+ : \bibstyle
+ :          {unsrt}
+I'm skipping whatever remains of this command
+Database file #1: biblio.bib
+Reallocated wiz_functions (elt_size=4) to 6000 items from 3000.
+You've used 7 entries,
+            3492 wiz_defined-function locations,
+            757 strings with 6964 characters,
+and the built_in function-call counts, 20131 in all, are:
+= -- 2555
+> -- 229
+< -- 4
++ -- 121
+- -- 71
+* -- 1780
+:= -- 2221
+add.period$ -- 21
+call.type$ -- 7
+change.case$ -- 65
+chr.to.int$ -- 7
+cite$ -- 7
+duplicate$ -- 1764
+empty$ -- 1793
+format.name$ -- 89
+if$ -- 4607
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 85
+newline$ -- 41
+num.names$ -- 25
+pop$ -- 199
+preamble$ -- 1
+purify$ -- 59
+quote$ -- 0
+skip$ -- 180
+stack$ -- 0
+substring$ -- 3718
+swap$ -- 224
+text.length$ -- 3
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 63
+warning$ -- 0
+while$ -- 94
+width$ -- 0
+write$ -- 96
+(There was 1 error message)
