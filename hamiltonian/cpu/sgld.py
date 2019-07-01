@@ -38,7 +38,7 @@ class sgld(hmc):
             for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                 q=self.step(y_train,X_batch,y_batch,q,rng)
 
-        logp_samples=np.zeros(int(niter))
+        #logp_samples=np.zeros(int(niter))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
@@ -48,25 +48,25 @@ class sgld(hmc):
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q=self.step(y_train,X_batch,y_batch,q,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
+                    #logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
                         posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                         posterior[var][-1,:]=q[var]
                     backend_samples.flush()
             backend_samples.close()
-            return 1, logp_samples
+            return 1, 1#logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q=self.step(y_train,X_batch,y_batch,q,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
+                    #logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         posterior[var].append(q[var].reshape(-1))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-            return posterior,logp_samples
+            return posterior,1 #logp_samples
             
     def iterate_minibatches(self,X_train,y_train,batchsize):
         assert X_train.shape[0] == y_train.shape[0]

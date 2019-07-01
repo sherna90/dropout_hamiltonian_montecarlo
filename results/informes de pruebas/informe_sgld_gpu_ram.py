@@ -45,10 +45,10 @@ for j in range(len(D_list)):
         start=time.time()
         backend = 'sgld_{}_{}.h5'.format(D_list[j], n_samples[i])
         print(backend)
-        posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_size=50, backend=None)
+        posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_size=50, backend=backend)
         end = time.time() - start
         print("{} {} {}".format(D_list[j], n_samples[i], end))
         df.loc[cont] = [D_list[j], n_samples[i], end]
         cont += 1
 
-df.to_csv('informe-gpu-ram.csv', sep='\t')
+df.to_csv('informe-sgld-gpu-backend.csv', sep=',')

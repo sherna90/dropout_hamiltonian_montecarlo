@@ -51,4 +51,4 @@ for j in range(len(D_list)):
         df.loc[cont] = [D_list[j], n_samples[i], end]
         cont += 1
 
-df.to_csv('informe-sgld-multicore-ram.csv', sep=',')
+df.to_csv('informe-sgld-multicore-backend.csv', sep=',')
