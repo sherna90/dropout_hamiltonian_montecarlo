@@ -39,7 +39,7 @@ class sgld(hmc):
             for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                 q=self.step(y_train,X_batch,y_batch,q,rng)
 
-        logp_samples=cp.zeros(int(niter))
+        #logp_samples=cp.zeros(int(niter))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
@@ -56,7 +56,7 @@ class sgld(hmc):
                         posterior[var][-1,:]=cp.asnumpy(q[var])
                     backend_samples.flush()
             backend_samples.close()
-            return 1, logp_samples
+            return 1, 1#logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
@@ -67,7 +67,7 @@ class sgld(hmc):
                         posterior[var].append(cp.asnumpy(q[var].reshape(-1)))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-            return posterior,logp_samples
+            return posterior,1 #logp_samples
     
     def iterate_minibatches(self, X, y, batchsize):
         assert X.shape[0] == y.shape[0]

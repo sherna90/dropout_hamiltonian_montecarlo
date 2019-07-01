@@ -23,7 +23,7 @@ class sgld_multicore(sgld):
             for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                 X_batch, y_batch = sgld_multicore.sample.queue.get()
                 par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-        logp_samples=np.zeros(niter)
+        #logp_samples=np.zeros(niter)
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
@@ -34,27 +34,27 @@ class sgld_multicore(sgld):
                 for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
+                    #logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
                         posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                         posterior[var][-1,:]=par[var]
                     backend_samples.flush()
             backend_samples.close()
-            return 1, logp_samples
+            return 1, 1#logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-                    logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
+                    #logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
                     for var in self.start.keys():
                         posterior[var].append(par[var].reshape(-1))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
                 
-            return posterior,logp_samples
+            return posterior, #logp_samples
 
     def iterate_minibatches(self, X_train,y_train,queue, batch_size, total):
         for i in range(int(total)):
@@ -82,8 +82,8 @@ class sgld_multicore(sgld):
         l.join() 
         if not backend:
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return posterior,logp_samples
+            #logp_samples=np.concatenate([r[1] for r in results],axis=0)
+            return posterior,1 #logp_samples
         else:
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return multi_backend,logp_samples
+            #logp_samples=np.concatenate([r[1] for r in results],axis=0)
+            return multi_backend, 1#logp_samples
