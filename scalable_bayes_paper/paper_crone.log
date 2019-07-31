@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.5.24)  3 JUL 2019 12:37
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.5.24)  31 JUL 2019 02:11
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -2507,6 +2507,15 @@ Overfull \hbox (6.0pt too wide) has occurred while \output is active
  []
 
 [2 <./figures/cpu_architechture.png> <./figures/gpu_architechture.png>]
+Overfull \hbox (2.50372pt too wide) in paragraph at lines 105--125
+ [][] 
+ []
+
+
+Overfull \hbox (2.50372pt too wide) in paragraph at lines 133--154
+ [][] 
+ []
+
 
 LaTeX Warning: `h' float specifier changed to `ht'.
 
@@ -2534,7 +2543,7 @@ Package rerunfilecheck Info: File `paper_crone.out' has not changed.
 Here is how much of TeX's memory you used:
  37312 strings out of 492982
  712508 string characters out of 6134896
- 910151 words of memory out of 5000000
+ 910150 words of memory out of 5000000
  39939 multiletter control sequences out of 15000+600000
  669961 words of font info for 373 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -2553,7 +2562,7 @@ stix/stix-mathit.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/stix/sti
 x-mathrm-bold.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/stix/stix-m
 athrm.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/stix/stix-mathsf.pf
 b>
-Output written on paper_crone.pdf (4 pages, 171224 bytes).
+Output written on paper_crone.pdf (4 pages, 171231 bytes).
 PDF statistics:
  143 PDF objects out of 1000 (max. 8388607)
  119 compressed objects within 2 object streams

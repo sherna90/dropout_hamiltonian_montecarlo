@@ -104,7 +104,7 @@ Firstly, a serial version  of the SGD algorithm is tested on the CPU and compare
 	\centering
  \begin{tabular}{|c|c|c|c|c|c|c|}
  	\hline 
- 	D & N & CPU Time [s] & GPU Time [s] & Name & Name & Speed-Up\\ 
+ 	D & N & CPU Time [s] & GPU Time [s] & CPU Time [s]/N & GPU Time [s]/N & Speed-Up\\ 
  	\hline 
  	10 &	1000&	11.98&	124.85& 0.0119& 0.1248& 10.42\\
  	10&	10000&	119.90&	1245.98& 0.0119& 0.1245& 10.39\\
@@ -132,7 +132,7 @@ Secondly, the run time behavior of a multi-core CPU implementation of SGLD is sh
 	\centering
 	\begin{tabular}{|c|c|c|c|c|c|c|}
 		\hline 
-		D & N & CPU Time [s] & GPU Time [s] & Name & Name & Speed-Up\\ 
+		D & N & CPU Time [s] & GPU Time [s] & CPU Time [s]/N & GPU Time [s]/N & Speed-Up\\ 
 		\hline 		
 10	& 1000& 	24.75& 294.04  & 0.0247& 0.2940& 11.87\\
 10	& 10000& 	245.22& 2946.67	& 0.0245& 0.2946& 12.01\\
