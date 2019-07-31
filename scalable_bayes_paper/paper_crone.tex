@@ -28,10 +28,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \title{A Comparison of Stochastic Gradient MCMC using Multi-Core and GPU Architectures}
 
-\author[1*]{Sergio Hern\'andez}
+\author[*1,2]{Sergio Hern\'andez}
 \author[1]{Jos\'e Vald\'es}
-\affil[1]{Laboratorio de Procesamiento de Informaci\'on Geoespacial. Universidad Cat\'olica del Maule. Chile}
-\affil[2]{Centro de Innovaci\'on en Ingenier\'ia Aplicada.}
+\author[3]{Matias Valdenegro}
+\affil[1]{Laboratorio de Procesamiento de Informaci\'on Geoespacial.}
+\affil[2]{Centro de Innovaci\'on en Ingenier\'ia Aplicada, Universidad Cat\'olica del Maule. Chile}
+\affil[3]{German Research Center for Artificial Intelligence, Robotics Innovation Center. Germany}
 \corr{shernandez@ucm.cl}{SH}
 
 
@@ -43,7 +45,7 @@
 \maketitle
 
 \begin{abstract}
-Deep learning models are traditionally used in big data scenarios. When there is not enough training data to fit a large model, transfer learning repurpose the learned features from an existing model and re-train the lower layers for the new task. Bayesian inference techniques can be used to capture the uncertainty of the new model but it comes with a high computational cost. In this paper, we compare the run time performance of an Stochastic Gradient Markov Chain Monte Carlo method using different architectures. As opposed to the widely usage of GPUs for deep learning, we found significant advantages from using modern CPU architectures.
+Deep learning models are traditionally used in big data scenarios. When there is not enough training data to fit a large model, transfer learning repurpose the learned features from an existing model and re-train the lower layers for the new task. Bayesian inference techniques can be used to capture the uncertainty of the new model but it comes with a high computational cost. In this paper, we compare the run time performance of an Stochastic Gradient Markov Chain Monte Carlo method using two different architectures, GPU and multi-core CPU. As opposed to the widely usage of GPUs for deep learning, we found significant advantages from using modern CPU architectures.
 \end{abstract}
 
 \section{Introduction}
@@ -54,9 +56,9 @@ In particular. Bayesian inference is used for computing posterior distributions 
 The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm is an approximation technique that fully exploits data subsets \cite{welling2011bayesian}. The method replaces gradients and likelihood evaluations required by standard MCMC by stochastic gradients based on data subsets (mini-batches). Some implementations can be found in software libraries such as Edward \cite{Tran2018}, ZhuSuan \cite{zhusuan2017} and the SGMCMC package \cite{baker2017sgmcmc}. All of these implementations are based on TensorFlow\footnote{\url{https://www.tensorflow.org/}} as a backend and therefore inherit the scalability of GPU computation. However, there is little research done on the scalability of SGLD using modern CPU architectures. Therefore, in this paper we present a novel comparison of SGLD implementations on GPUs and CPUs. 
 % 
 \section{Stochastic Gradient MCMC}
-Stochastic Gradient Descent (SGD) is an optimization technique traditionally used for out-of-core training deep learning models. For example, if we represent a dataset $\mathbf{D}=\{\mathbf{d_1},\ldots,\mathbf{d_N}\}$ as a set of tuples $\mathbf{d}=(\mathbf x,y)$ that contains features $\mathbf x \in \mathbb R^D$ and the labels $y=\{1,\ldots,K\}$. An stochastic optimization procedure iterates  over mini-batches of size $B \ll N$ and compute a point estimate $\theta^\ast = \operatorname{argmax} p(\mathbf{D} \vert \theta)$.
+Stochastic Gradient Descent (SGD) is an optimization technique traditionally used for out-of-core training deep learning models. Let $\mathbf{D}=\{\mathbf{d_1},\ldots,\mathbf{d_N}\}$ represent a typical dataset used for classification problems, as a set of tuples $\mathbf{d}=(\mathbf x,y)$ that contains features $\mathbf x \in \mathbb R^D$ and labels $y=\{1,\ldots,K\}$. Conversely, the stochastic optimization procedure iterates  over mini-batches of size $B \ll N$ and computes a point estimate $\theta^\ast = \operatorname{argmax} p(\mathbf{D} \vert \theta)$.
 
-Deep learning models such as convolutional neural networks may exploit model parallelism for fully connected layers and data parallelism for convolutional layers. The former training technique applies parallelism across the model dimension (number of features). The latter technique applies parallelism across the data dimension (number of examples). In a model parallel setting, different workers are trained on the same batch and they recombine results as soon as possible. In the other hand, in a data parallel setting, each worker is trained on different batches of data. 
+Deep learning models such as convolutional neural networks may exploit model parallelism for fully connected layers and data parallelism for convolutional layers. The former training technique applies parallelism across the model dimension (number of features) and the latter technique applies parallelism across the data dimension (number of examples). In a model parallel setting, different workers are trained on the same batch and they recombine results as soon as possible. In the other hand, in a data parallel setting, each worker is trained on different batches of data \cite{LI201695}. 
 
 In the Bayesian framework, we consider the unknown parameter $\theta$ as a random variable. The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm uses an stochastic gradient approximation to generate samples from the posterior distribution $p(\theta \vert \mathbf{D})$. The SGLD algorithm generate proposals using:
 
@@ -154,6 +156,9 @@ Secondly, the run time behavior of a multi-core CPU implementation of SGLD is sh
 \caption{Run time comparison of CPU implementation of SGLD for a softmax regression problem}
 \label{tab:sgld} 
 \end{table}
+
+\section{Conclusions}
+SGD is a parallel algorithm that can be effectively computed using data parallel operations for large scale deep learning models such as convolutional neural nets. Although SGLD is an stochastic gradient MCMC method based on SGD, the algorithm can benefit from data parallel operations when the model is shallow (e.g. a single fully connected layer). In that case, we presented a multi-core implementation of the SGLD algorithm that outperforms a GPU implementation achieving a $10$X speed up. 
 \bibliographystyle{unsrt}
 \bibliography{biblio}
 \end{document}
