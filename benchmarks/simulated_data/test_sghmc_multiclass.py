@@ -6,30 +6,37 @@ from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 import sys
-sys.path.append("../../")
-import hamiltonian.softmax as softmax 
-import hamiltonian.sghmc as sampler
+sys.path.append("../../") 
+import hamiltonian.cpu.softmax as softmax
+import hamiltonian.cpu.sghmc as sampler
 import hamiltonian.utils as utils
 import numpy as np
+
+
+niter = 300
+burnin = 1e2
 
 D=2
 centers = [[-5, 0],  [5, -1], [10,10]]
 K=len(centers)
 #print K
-X, y = make_blobs(n_samples=1000, centers=centers, cluster_std=1,random_state=40)
+X, y = make_blobs(n_samples=100, centers=centers, cluster_std=1,random_state=40)
 y=utils.one_hot(y,K)
 X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
 alpha=1./4.
 start_p={'weights':np.zeros((D,K)),'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-mcmc=sampler.SGHMC(X_train,y_train,softmax.loss, softmax.grad, start_p,hyper_p, path_length=2,verbose=1)
-posterior_sample,logp_samples=mcmc.multicore_sample(1e3,1e2,batch_size=50)
+
+model=softmax.SOFTMAX()
+
+mcmc=sampler.sghmc(model.loss, model.grad, start_p,hyper_p, path_length=2,verbose=0)
+posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter=niter,burnin=burnin,batch_size=50)
 post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
 post_par_var={var:np.std(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-y_pred=softmax.predict(X_test,post_par)
+y_pred=model.predict(X_test,post_par)
 
-y_pred=softmax.predict(X_test,post_par)
+y_pred=model.predict(X_test,post_par)
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
