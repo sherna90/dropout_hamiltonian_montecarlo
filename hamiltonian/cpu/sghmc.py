@@ -15,7 +15,7 @@ import time
 
 class sghmc(hmc):
 
-    def step(self,X_train,y_train,X_batch,y_batch,state,momemtum,rng):
+    def step(self,X_batch,y_batch,state,momemtum,rng):
         n_steps=1
         direction = 1.0 if rng.rand() > 0.5 else -1.0
         epsilon={var:direction*self.step_size for var in self.start.keys()}
@@ -26,7 +26,7 @@ class sghmc(hmc):
         for i in range(n_steps):
             q_new, p_new = self.leapfrog(q_new,p_new, epsilon,X_batch,y_batch,rng)
         
-        acceptprob=self.accept(X_train,y_train,q, q_new, p, p_new)
+        acceptprob=self.accept(X_batch,y_batch,q, q_new, p, p_new)
         if np.isfinite(acceptprob) and (rng.rand() < acceptprob):
             q = q_new
             p = p_new
@@ -49,13 +49,16 @@ class sghmc(hmc):
         return q_new, p_new
 
     def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
+        if backend:
+            backend = backend+".h5"
+        
         accepted=[]
         rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
         #self.find_reasonable_epsilon(X_train,y_train,q,rng)
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
-                q,p,a=self.step(X_train,y_train,X_batch,y_batch,q,p,rng)
+                q,p,a=self.step(X_batch,y_batch,q,p,rng)
                 accepted.append(a)
         if self._verbose:
             print('burn-in acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))  
@@ -78,12 +81,12 @@ class sghmc(hmc):
                         posterior[var][-1,:]=q[var]
                     backend_samples.flush()
             backend_samples.close()
-            return 1, logp_samples
+            return [backend], logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
-                    q,p,a=self.step(X_train,y_train,X_batch,y_batch,q,p,rng)
+                    q,p,a=self.step(X_batch,y_batch,q,p,rng)
                     accepted.append(a)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
@@ -104,7 +107,7 @@ class sghmc(hmc):
     def backend_mean(self, multi_backend, niter):
         aux = []
         for filename in multi_backend:
-            f=h5py.File(filename)
+            f=h5py.File(filename, 'r')
             aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
         mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return mean
