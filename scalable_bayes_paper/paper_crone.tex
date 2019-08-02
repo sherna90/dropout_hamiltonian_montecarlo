@@ -97,7 +97,9 @@ Graphic Processing Units (GPus) are many-core processors that offer massively pa
 Modern CPUs are equipped with multiple cores which are well suited to single instruction multiple data operations. Python is built around a Global Interpreter Lock, which prevents the execution of multiple threads at once.  Nevertheless, parallel Markov can be spawn using all available cores.  Moreover, data parallelism can be achieved by sharing a data queue that feeds each process with a different data mini-batch.  Figure \ref{fig:sgld_architechture} depicts the proposed GPU and CPU implementations of the SGLD algorithm. 
 
 
-\section{Experimental Results}
+\section{Experimental results}
+
+\subsection{Synthetic data}
 In this section, the goal is to demonstrate performance and scalability of the SGLD algorithm. The GPU and CPU implementations are tested using randomly generated multi-class classification problems. Different combinations on the number of features $D$ and number of instances $N$ were tested. The number of classes was set to $K=3$, the number of epochs was set to $E=2 \times 10^4$ and the size of the mini-batches was set to $B=50$ for all examples.
 
 Firstly, a serial version  of the SGD algorithm is tested on the CPU and compared with a parallel implementation on the GPU. All experiments are run on a Server with an Intel Xeon E5-2620 CPU with 12 cores using a single fully connected softmax layer (which is widely used in transfer learning). The server is also equipped with an NVIDIA TITAN X GPU and both implementations were developed using Python 3.4.9. Table \ref{tab:sgd} shows the run time for the different values of $D$ and $N$. According to \cite{LI201695}, convolutional layers contain $90\%$ of the computation and $5\%$ of the parameters, while fully connected layers contain $95\%$ of the parameters and $5\%-10\%$ of the computation. Consistently, since there is a fully connected layer operating on a small batch of data, there is no speedup and the GPU implementation is about $10$x slower than the CPU implementation.
@@ -134,7 +136,7 @@ Secondly, the run time behavior of a multi-core CPU implementation of SGLD is sh
 	\centering
 	\begin{tabular}{|c|c|c|c|c|c|c|}
 		\hline 
-		D & N & CPU Time [s] & GPU Time [s] & Name & Name & Speed-Up\\ 
+		D & N & CPU Time [s] & GPU Time [s] & CPU Time [s]/N & GPU Time [s]/N & Speed-Up\\ 
 		\hline 		
 10	& 1000& 	24.75& 294.04  & 0.0247& 0.2940& 11.87\\
 10	& 10000& 	245.22& 2946.67	& 0.0245& 0.2946& 12.01\\
@@ -156,6 +158,11 @@ Secondly, the run time behavior of a multi-core CPU implementation of SGLD is sh
 \caption{Run time comparison of CPU implementation of SGLD for a softmax regression problem}
 \label{tab:sgld} 
 \end{table}
+
+\subsection{Bayesian transfer learning}
+Training deep neural networks requires a vast amount of labeled data in order to achieve optimal performance. However, it becomes harder to collect data for any specific task and manually label examples as required for supervised classification problems. Transfer learning can alleviate the need of such amount of data by utilizing knowledge from previously learned tasks and applying this to the new task. In this experiment, we perform Bayesian transfer learning for training a plant diseases dataset using a previously trained deep neural network.
+
+The Plant Village dataset contains $54306$ images with combinations of $14$ crops and $26$ diseases, leaving a total number of $38$ classes. The images consist of $256 \times 256$ pixels in the RGB color space \cite{mohanty2016using}.  The VGG16 deep neural network with weights trained on the Imagenet dataset is used to extract features from the plants diseases images. The original class distribution is unbalanced, therefore random over-sampling is used to achieve a uniform class distribution. Moreover, images are resized to $150 \times 150$ pixels and min\-max normalization is used on each one of the examples.
 
 \section{Conclusions}
 SGD is a parallel algorithm that can be effectively computed using data parallel operations for large scale deep learning models such as convolutional neural nets. Although SGLD is an stochastic gradient MCMC method based on SGD, the algorithm can benefit from data parallel operations when the model is shallow (e.g. a single fully connected layer). In that case, we presented a multi-core implementation of the SGLD algorithm that outperforms a GPU implementation achieving a $10$X speed up. 

@@ -4,27 +4,32 @@ warnings.filterwarnings("ignore")
 import numpy as np
 from hamiltonian.utils import *
 from copy import deepcopy
-from numpy.linalg import norm
-from scipy.special import logsumexp
 from tqdm import tqdm
 import cupy as cp
+from cupy.linalg import norm
 import time
 
 class SOFTMAX:
     def __init__(self):
         pass
 
+    def logsumexp(self,log_prob,axis):
+        max_prob = cp.max(log_prob,axis=axis)
+        ds = log_prob - max_prob.reshape((log_prob.shape[0],1))
+        sum_of_exp = cp.exp(ds).sum(axis=axis)
+        return max_prob + cp.log(sum_of_exp)
+
     def cross_entropy(self, y_linear, y):
         #y_linear=cp.hstack((y_linear,cp.zeros((y_linear.shape[0],1))))
-        lse=logsumexp(y_linear,axis=1)
+        lse=self.logsumexp(y_linear,axis=1)
         y_hat=y_linear-cp.repeat(lse[:,cp.newaxis],y.shape[1]).reshape(y.shape)
         return cp.sum(y *  y_hat,axis=1)
 
     def log_prior(self, par,hyper):
-        logpdf=lambda z,alpha,k : -0.5*cp.sum(alpha*cp.square(z))-0.5*k*cp.log(1./alpha)-0.5*k*cp.log(2*cp.pi)
-        par_dims={var:cp.array(par[var]).size for var in par.keys()}
-        log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
-        return cp.sum(log_prior)
+        logpdf=lambda N,mu,sigma  : -N/2 * np.log(2*np.pi*sigma**2) - (1/(2*sigma**2)) * np.sum((np.zeros(N) - mu.ravel())**2)
+        par_dims={var:cp.asnumpy(par[var]).size for var in par.keys()}
+        log_prior=[logpdf(par_dims[var],cp.asnumpy(par[var]),1./hyper['alpha']) for var in par.keys()]
+        return np.sum(log_prior)
 
     def softmax(self, y_linear):
         #y_linear=cp.hstack((y_linear,cp.zeros((y_linear.shape[0],1))))
@@ -52,7 +57,7 @@ class SOFTMAX:
     
     def log_likelihood(self, X, y, par,hyper):
         y_linear = cp.dot(X, par['weights']) + par['bias']
-        ll= cp.sum(self.cross_entropy(y_linear,y))
+        ll= cp.sum(self.cross_entropy(y_linear,y))/float(y.shape[0])
         return ll
         
     def loss(self, X, y, par,hyper):
@@ -76,9 +81,10 @@ class SOFTMAX:
                 n_batch=cp.float(y_batch.shape[0])
                 grad_p=self.grad(X_batch,y_batch,par_gpu,hyper)
                 for var in par_gpu.keys():
+                    #momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]/norm(grad_p[var])
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                     par_gpu[var]+=momemtum[var]
-            #loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
+            loss_val[i]=-1.*self.loss(X_batch,y_batch,par_gpu,hyper)
             if verbose and (i%(epochs/10)==0):
                 pass
                 #print('loss: {0:.4f}'.format(loss_val[i]))

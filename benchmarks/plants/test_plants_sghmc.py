@@ -2,36 +2,57 @@ import warnings
 warnings.filterwarnings("ignore")
 
 import numpy as np
-from sklearn import datasets
 from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-import matplotlib.pyplot as plt
-import sys 
-import pandas as pd
-import time
-import h5py 
-
+import sys
 sys.path.append("../../") 
-import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sghmc as sampler
+import time
+import h5py
+import pandas as pd
 import hamiltonian.utils as utils
+use_gpu=True
+if use_gpu:
+    import hamiltonian.gpu.softmax as softmax
+    import hamiltonian.gpu.sgld as sampler
+else:
+    import hamiltonian.cpu.softmax as softmax
+    import hamiltonian.cpu.sgld as sampler
 
-path_length=10
-epochs=20
+import matplotlib.pyplot as plt 
+import seaborn as sns
+import itertools
+
+def plot_confusion_matrix(cm, classes,
+                          normalize=True,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Spectral):
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(classes)
+    plt.xticks(tick_marks, tick_marks, rotation=45,fontsize=8)
+    plt.yticks(tick_marks, tick_marks,fontsize=8)
+    fmt = '.1f' if normalize else 'd'
+    thresh = cm.max() / 2.
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.tight_layout()
+
+eta=1e-3
+niter=100
 batch_size=50
 alpha=1e-2
+burnin=1e3
+data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
-data_path = '../../data/'
+plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
+X_train=plants_train['features']
+y_train=plants_train['labels']
+plants_test=h5py.File(data_path+'plant_village_val.hdf5','r')
+X_test=plants_test['features']
+y_test=plants_test['labels']
 
-plants_train=h5py.File(data_path+'train_features_labels.h5','r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
-plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
-
-classes=np.unique(y_train)
 D=X_train.shape[1]
 K=y_train.shape[1]
 import time
@@ -39,14 +60,12 @@ import time
 start_p={'weights':np.zeros((D,K)),
         'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
-
-model=softmax.SOFTMAX()
-mcmc=sampler.sghmc(model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=1)
-t0=time.clock()
-
-#backend = "results/sgmcmc_plants"
+backend = "sgmcmc_plants.h5"
 backend = None
-posterior_sample,logp_samples=mcmc.sample(X_train,y_train,1e3,1e2,batch_size,backend=backend)
+model=softmax.SOFTMAX()
+mcmc=sampler.sgld(model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=0)
+start=time.time()
+posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_size=batch_size, backend=backend)
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
@@ -57,3 +76,9 @@ print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
 
 plants_train.close()
 plants_test.close()
+loss=pd.DataFrame(logp_samples)
+loss.to_csv('loss_sgld_gpu.csv',sep=',',header=False)
+plt.figure()
+plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGLD GPU')
+plt.savefig('plants_confusion_matrix_sgld_gpu.pdf',bbox_inches='tight')
+plt.close()
