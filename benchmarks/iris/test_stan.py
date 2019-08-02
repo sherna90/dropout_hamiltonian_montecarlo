@@ -9,7 +9,9 @@ import sys
 import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-white')
-sys.path.append("./") 
+
+sys.path.append("../../") 
+import hamiltonian.cpu.softmax as softmax
 
 scaler = StandardScaler()
 iris = datasets.load_iris()
@@ -59,9 +61,9 @@ data = dict(N=N, D=D,K=K, X=X_train, y=y_train)
 algorithm="HMC" #put NUTS or HMC
 iterations=2000 #iterations of algorithm
 
-print " ------------------------------------------------------------------------------------------------------------"
-print "| Running Gaussian-prior with: ",algorithm ," | Iterations: ",iterations," | N: ",N, " | D:", D, " | K:", K
-print " ------------------------------------------------------------------------------------------------------------"
+print (" ------------------------------------------------------------------------------------------------------------")
+print ("| Running Gaussian-prior with: ",algorithm ," | Iterations: ",iterations," | N: ",N, " | D:", D, " | K:", K)
+print (" ------------------------------------------------------------------------------------------------------------")
 
 """sm = pystan.StanModel(model_code=model_code)
 "op = sm.optimizing(data=data)
@@ -71,15 +73,29 @@ fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, alg
 
 post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0)}
 
-#y_pred=softmax.predict(X_test,post_par)
-#print(classification_report(y_test, y_pred))
-#print(confusion_matrix(y_test, y_pred))
+soft=softmax.SOFTMAX()
+
+y_pred=soft.predict(X_test,post_par)
+print(classification_report(y_test, y_pred))
+print(confusion_matrix(y_test, y_pred))
 
 import pandas as pd
 
 b_cols=columns=['b1', 'b2','b3']
+w_cols=[]
+for i in range(1,13):
+    w_cols.append('w'+str(i))
+
 b_sample = pd.DataFrame(fit.extract()['bias'], columns=b_cols)
+w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
+
 print(b_sample.describe())
-#w_sample = pd.DataFrame(fit.extract()['weights'].reshape(-1))
+print(w_sample.describe())
+
+sns.distplot(b_sample['b1'])
+sns.distplot(b_sample['b2'])
+sns.distplot(b_sample['b3'])
 sns.pairplot(b_sample)
 plt.show()
+#sns.pairplot(b_sample)
+#plt.show()

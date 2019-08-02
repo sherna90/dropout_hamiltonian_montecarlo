@@ -61,7 +61,7 @@ start_p={'weights':np.zeros((D,K)),
         'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 backend = "sgmcmc_plants.h5"
-backend = None
+#backend = None
 model=softmax.SOFTMAX()
 mcmc=sampler.sgld(model.loss, model.grad, start_p,hyper_p, path_length=1,verbose=0)
 start=time.time()
@@ -69,10 +69,20 @@ posterior_sample,logp_samples=mcmc.sample(X_train,y_train,niter,burnin,batch_siz
 t1=time.clock()
 print("Ellapsed Time : ",t1-t0)
 
-post_par={var:np.mean(posterior_sample[var],axis=0) for var in posterior_sample.keys()}
-y_pred=softmax.predict(X_test,post_par)
-print(classification_report(y_test[:].argmax(axis=1), y_pred))
-print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
+if backend:
+    par_mean = mcmc.backend_mean(posterior_sample, niter)
+
+    y_pred_mc=model.predict(X_test,par_mean)
+
+    print(classification_report(y_test[:].argmax(axis=1), y_pred_mc))
+    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred_mc))
+else:
+    post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+    #post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+    y_pred=model.predict(X_test,post_par)
+    print(classification_report(y_test[:].argmax(axis=1), y_pred))
+    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
+
 
 plants_train.close()
 plants_test.close()
