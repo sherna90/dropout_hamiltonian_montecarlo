@@ -8,6 +8,7 @@ import os
 from hamiltonian.cpu.hmc import hmc
 from tqdm import tqdm, trange
 import h5py 
+import time
 
 class sgld(hmc):
 
@@ -23,15 +24,20 @@ class sgld(hmc):
         grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
         n_batch=np.float(y_batch.shape[0])
         n_data=np.float(y_train.shape[0])
+
         for var in self.start.keys():
             noise_scale = 2.0*epsilon[var]
             sigma = np.sqrt(max(noise_scale, 1e-16)) 
             dim=(np.array(self.start[var])).size
             nu=sigma*rng.normal(0,sigma,dim).reshape(q_new[var].shape)
-            q_new[var]+=(n_data/n_batch)*1e-8 * grad_q[var]+nu
+            q_new[var]+=(n_data/n_batch)*epsilon[var] * grad_q[var]*0.01+nu
+            #q_new[var]+=(n_data/n_batch)*1e-8 * grad_q[var]+nu
         return q_new
 
     def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None):
+        if backend:
+            backend = backend+".h5"
+        
         rng = np.random.RandomState()
         q=self.start
         for i in tqdm(range(int(burnin)),total=int(burnin)):
@@ -55,7 +61,7 @@ class sgld(hmc):
                         posterior[var][-1,:]=q[var]
                     backend_samples.flush()
             backend_samples.close()
-            return 1, 1#logp_samples
+            return [backend], 1#logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
@@ -77,7 +83,7 @@ class sgld(hmc):
     def backend_mean(self, multi_backend, niter):
         aux = []
         for filename in multi_backend:
-            f=h5py.File(filename)
+            f=h5py.File(filename, 'r')
             aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
         mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return mean

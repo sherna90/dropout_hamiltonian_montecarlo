@@ -26,7 +26,7 @@ class sghmc_multicore(sghmc):
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for auxiliar in range(len(range(0, X_train.shape[0] - batch_size + 1, batch_size))):
                 X_batch, y_batch = sghmc_multicore.sample.queue.get()
-                q,p,a=self.step(X_train,y_train,X_batch,y_batch,q,p,rng)
+                q,p,a=self.step(X_batch,y_batch,q,p,rng)
                 accepted.append(a)
         if self._verbose:
             print('burn-in acceptance rate : {0:.4f}'.format(self.acceptance_rate(accepted)))  
@@ -42,7 +42,7 @@ class sghmc_multicore(sghmc):
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sghmc_multicore.sample.queue.get()
-                    q,p,a=self.step(X_train,y_train,X_batch,y_batch,q,p,rng)
+                    q,p,a=self.step(X_batch,y_batch,q,p,rng)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
@@ -56,7 +56,7 @@ class sghmc_multicore(sghmc):
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sghmc_multicore.sample.queue.get()
-                    q,p,a=self.step(X_train,y_train,X_batch,y_batch,q,p,rng)
+                    q,p,a=self.step(X_batch,y_batch,q,p,rng)
                     accepted.append(a)
                     logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
