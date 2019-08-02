@@ -14,15 +14,14 @@ class SOFTMAX:
         pass
 
     def cross_entropy(self, y_linear, y):
-        #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
         lse=logsumexp(y_linear,axis=1)
         y_hat=y_linear-np.repeat(lse[:,np.newaxis],y.shape[1]).reshape(y.shape)
         return np.sum(y *  y_hat,axis=1)
 
     def log_prior(self, par,hyper):
-        logpdf=lambda z,alpha,k : -0.5*np.sum(alpha*np.square(z))-0.5*k*np.log(1./alpha)-0.5*k*np.log(2*np.pi)
+        logpdf=lambda N,mu,sigma  : -N/2 * np.log(2*np.pi*sigma**2) - (1/(2*sigma**2)) * np.sum((np.zeros(N) - mu.ravel())**2)
         par_dims={var:np.array(par[var]).size for var in par.keys()}
-        log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
+        log_prior=[logpdf(par_dims[var],par[var],1./hyper['alpha']) for var in par.keys()]
         return np.sum(log_prior)
 
     def softmax(self, y_linear):
@@ -51,7 +50,7 @@ class SOFTMAX:
     
     def log_likelihood(self, X, y, par,hyper):
         y_linear = np.dot(X, par['weights']) + par['bias']
-        ll= np.sum(self.cross_entropy(y_linear,y))
+        ll= np.sum(self.cross_entropy(y_linear,y))/float(y.shape[0])
         return ll
         
     def loss(self, X, y, par,hyper):
@@ -74,9 +73,10 @@ class SOFTMAX:
                 n_batch=np.float(y_batch.shape[0])
                 grad_p=self.grad(X_batch,y_batch,par,hyper)
                 for var in par.keys():
+                    #momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]/norm/(grad_p[var])
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                     par[var]+=momemtum[var]
-            #loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
+            loss_val[i]=-1.*self.loss(X_batch,y_batch,par,hyper)
             if verbose and (i%(epochs/10)==0):
                 pass
                 #print('loss: {0:.4f}'.format(loss_val[i]))

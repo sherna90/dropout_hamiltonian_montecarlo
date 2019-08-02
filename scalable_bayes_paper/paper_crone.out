@@ -2,5 +2,7 @@
 \BOOKMARK [1][-]{section*.2}{Stochastic Gradient MCMC}{}% 2
 \BOOKMARK [2][-]{subsection*.3}{GPU SG-MCMC}{section*.2}% 3
 \BOOKMARK [2][-]{subsection*.5}{CPU SG-MCMC}{section*.2}% 4
-\BOOKMARK [1][-]{section*.6}{Experimental Results}{}% 5
-\BOOKMARK [1][-]{section*.9}{Conclusions}{}% 6
+\BOOKMARK [1][-]{section*.6}{Experimental results}{}% 5
+\BOOKMARK [2][-]{subsection*.7}{Synthetic data}{section*.6}% 6
+\BOOKMARK [2][-]{subsection*.10}{Bayesian transfer learning}{section*.6}% 7
+\BOOKMARK [1][-]{section*.11}{Conclusions}{}% 8
