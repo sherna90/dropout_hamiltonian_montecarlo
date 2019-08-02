@@ -26,7 +26,7 @@ class SOFTMAX:
         return cp.sum(y *  y_hat,axis=1)
 
     def log_prior(self, par,hyper):
-        logpdf=lambda N,mu,sigma  : -N/2 * np.log(2*np.pi*sigma**2) - (1/(2*sigma**2)) * np.sum((np.zeros(N) - mu.ravel())**2)
+        logpdf=lambda N,mu,sigma  : -N/2 * np.log(2*np.pi*sigma) - (1/(2*sigma)) * np.sum((np.zeros(N) - mu.ravel())**2)
         par_dims={var:cp.asnumpy(par[var]).size for var in par.keys()}
         log_prior=[logpdf(par_dims[var],cp.asnumpy(par[var]),1./hyper['alpha']) for var in par.keys()]
         return np.sum(log_prior)
@@ -61,7 +61,7 @@ class SOFTMAX:
         return ll
         
     def loss(self, X, y, par,hyper):
-        return (self.log_likelihood(X, y, par,hyper)+self.log_prior(par,hyper))
+        return (self.log_likelihood(X, y, par,hyper)+self.log_prior(par,hyper)/float(y.shape[0])
 
     def iterate_minibatches(self, X, y, batchsize):
         assert X.shape[0] == y.shape[0]
@@ -84,10 +84,9 @@ class SOFTMAX:
                     #momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]/norm(grad_p[var])
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                     par_gpu[var]+=momemtum[var]
-            loss_val[i]=-1.*self.loss(X_batch,y_batch,par_gpu,hyper)
+            loss_val[i]=-1.*self.log_likelihood(X_batch,y_batch,par_gpu,hyper)
             if verbose and (i%(epochs/10)==0):
-                pass
-                #print('loss: {0:.4f}'.format(loss_val[i]))
+                print('loss: {0:.4f}'.format(cp.asnumpy(loss_val[i])))
         return par_gpu,loss_val
 
     def predict(self, X,par,prob=False):

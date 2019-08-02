@@ -9,7 +9,7 @@ import time
 import h5py
 import pandas as pd
 import hamiltonian.utils as utils
-use_gpu=False
+use_gpu=True
 if use_gpu:
     import hamiltonian.gpu.softmax as softmax
 else:
@@ -40,7 +40,7 @@ def plot_confusion_matrix(cm, classes,
 
 eta=1e-3
 epochs=100
-batch_size=50
+batch_size=250
 alpha=1e-2
 data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
@@ -61,7 +61,7 @@ hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=softmax.SOFTMAX()
-par_sgd,loss_sgd=model.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
+par_sgd,loss_sgd=model.sgd(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
 elapsed_time=time.time()-start_time 
 print('SGD, time:',elapsed_time)
 y_pred=model.predict(X_test,par_sgd)
