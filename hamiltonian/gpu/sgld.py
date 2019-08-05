@@ -6,68 +6,84 @@ from hamiltonian.utils import *
 from numpy.linalg import inv
 from copy import deepcopy
 import os 
-from hamiltonian.cpu.hmc import hmc
+from hamiltonian.gpu.hmc import hmc
 from tqdm import tqdm, trange
 import h5py 
 
+from cupy.linalg import norm
+
 class sgld(hmc):
 
-    def step(self,y_train,X_batch,y_batch,state,rng):
+    def step(self,momentum,X_batch,y_batch,state,rng):
+        p_new=deepcopy(momentum)
         q_new = deepcopy(state)
-        n_data=cp.float(y_train.shape[0])
-        epsilon={var:self.step_size/n_data for var in self.start.keys()}
-        q_new = self.langevin(y_train,q_new, epsilon,X_batch,y_batch,rng)
-        return q_new
-
-    def langevin(self,y_train,q,epsilon,X_batch,y_batch,rng):
-        q_new=deepcopy(q)
-        grad_q=self.grad(X_batch,y_batch,q_new,self.hyper)
+        epsilon=self.step_size
+        grad_q=self.model.grad(X_batch,y_batch,state,self.hyper)
         n_batch=cp.float(y_batch.shape[0])
-        n_data=cp.float(y_train.shape[0])
-        for var in self.start.keys():
-            noise_scale = 2.0*epsilon[var]
-            sigma = cp.sqrt(max(noise_scale, 1e-16)) 
-            dim=(cp.array(self.start[var])).size
-            nu=sigma*rng.normal(0,sigma,dim).reshape(q_new[var].shape)
-            q_new[var]+=(n_data/n_batch)*1e-8 * grad_q[var]+nu
-        return q_new
+        gamma=0.9
+        for var in q_new.keys():
+            noise_scale = 2.0*epsilon
+            dim=q_new[var].shape
+            if len(dim)==1:
+                nu=cp.random.randn(dim[0],dtype=cp.float32)
+            else:
+                nu=cp.random.randn(dim[0],dim[1],dtype=cp.float32)
+            #p_new[var] = gamma*p_new[var] + (1.0/n_batch)*epsilon * grad_q[var]/norm(grad_q[var])
+            p_new[var] = nu*p_new[var] + (1.0/n_batch)*epsilon * grad_q[var]/norm(grad_q[var])
+            q_new[var]+=p_new[var]
+        return q_new,p_new
 
-    def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None):
+    def sample(self,X_train,y_train,epochs=1e4,burnin=1e3,batch_size=20,backend=None):
         rng = cp.random.RandomState()
         q={var:cp.asarray(self.start[var]) for var in self.start.keys()}
         for i in tqdm(range(int(burnin)),total=int(burnin)):
+            j=0
+            momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
             for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
-                q=self.step(y_train,X_batch,y_batch,q,rng)
-
-        #logp_samples=cp.zeros(int(niter))
+                q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
+                if (j%100 == 0):
+                    iter_loss=-1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
+                    print('minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
+                j+=1
+        loss_val=np.zeros(int(epochs))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
             for var in self.start.keys():
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=cp.float32)
-            for i in tqdm(range(int(niter)),total=int(niter)):
+            for i in tqdm(range(int(epochs)),total=int(epochs)):
+                j=0
+                momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
-                    q=self.step(y_train,X_batch,y_batch,q,rng)
-                    #logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
+                    q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
                     for var in self.start.keys():
                         param_shape=self.start[var].shape
-                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                         posterior[var][-1,:]=cp.asnumpy(q[var])
+                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                     backend_samples.flush()
+                    if (j%100 == 0):
+                        iter_loss=-1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
+                        print('minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
+                    j+=1
+                loss_val[i] = -1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
+                if (i%(epochs/10)==0):
+                    print('loss: {0:.4f}'.format(loss_val[i]))
             backend_samples.close()
-            return 1, 1#logp_samples
+            return backend_samples, loss_val
         else:
             posterior={var:[] for var in self.start.keys()}
-            for i in tqdm(range(int(niter)),total=int(niter)):
+            for i in tqdm(range(int(epochs)),total=int(epochs)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q=self.step(y_train,X_batch,y_batch,q,rng)
-                    #logp_samples[i] = self.logp(X_batch,y_batch,q,self.hyper)
                     for var in self.start.keys():
                         posterior[var].append(cp.asnumpy(q[var].reshape(-1)))
+                loss_val[i] = -1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
+                if (i%(epochs/10)==0):
+                    print('loss: {0:.4f}'.format(loss_val[i]))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-            return posterior,1 #logp_samples
+            return posterior,loss_val 
     
     def iterate_minibatches(self, X, y, batchsize):
         assert X.shape[0] == y.shape[0]
@@ -75,11 +91,14 @@ class sgld(hmc):
             excerpt = slice(start_idx, start_idx + batchsize)
             yield cp.asarray(X[excerpt]),cp.asarray(y[excerpt])
 
-    def backend_mean(self, multi_backend, niter):
-        aux = []
-        for filename in multi_backend:
-            f=h5py.File(filename)
-            aux.append({var:cp.sum(f[var],axis=0) for var in f.keys()})
-        mean = {var:((cp.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
+    def backend_mean(self, backend, epochs):
+        backend_samples=h5py.File(backend)
+        mean = {var:cp.mean(backend_samples[var][:],axis=0) for var in backend_samples.keys()}
+        backend_samples.close()
+        #aux = []
+        #for filename in multi_backend:
+        #    f=h5py.File(filename)
+        #    aux.append({var:cp.sum(f[var],axis=0) for var in f.keys()})
+        #mean = {var:((cp.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/epochs) for var in self.start.keys()}
         return mean
         

@@ -61,7 +61,7 @@ class SOFTMAX:
         return ll
         
     def loss(self, X, y, par,hyper):
-        return (self.log_likelihood(X, y, par,hyper)+self.log_prior(par,hyper)/float(y.shape[0])
+        return (self.log_likelihood(X, y, par,hyper)+float(y.shape[0])*self.log_prior(par,hyper))
 
     def iterate_minibatches(self, X, y, batchsize):
         assert X.shape[0] == y.shape[0]
