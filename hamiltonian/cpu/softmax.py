@@ -50,8 +50,8 @@ class SOFTMAX:
     
     def log_likelihood(self, X, y, par,hyper):
         y_linear = np.dot(X, par['weights']) + par['bias']
-        ll= np.sum(self.cross_entropy(y_linear,y))/float(y.shape[0])
-        return ll
+        ll= np.sum(self.cross_entropy(y_linear,y))
+        return ll/float(y.shape[0])
         
     def loss(self, X, y, par,hyper):
         return (self.log_likelihood(X, y, par,hyper)+self.log_prior(par,hyper)/float(y.shape[0]))
@@ -76,10 +76,9 @@ class SOFTMAX:
                     #momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]/norm/(grad_p[var])
                     momemtum[var] = gamma * momemtum[var] + (1.0/n_batch)*eta * grad_p[var]
                     par[var]+=momemtum[var]
-            loss_val[i]=-1.*self.loss(X_batch,y_batch,par,hyper)
+            loss_val[i]=-1.*self.log_likelihood(X_batch,y_batch,par,hyper)
             if verbose and (i%(epochs/10)==0):
-                pass
-                #print('loss: {0:.4f}'.format(loss_val[i]))
+                print('loss: {0:.4f}'.format(loss_val[i]))
         return par,loss_val
 
     def predict(self, X,par,prob=False):
@@ -99,14 +98,14 @@ class SOFTMAX:
         for i in range(int(epochs)):
             for batch in self.iterate_minibatches(X, y, batch_size):
                 X_batch, y_batch = batch
-                n_x,n_y=X_batch.shape
+                n_batch=np.float(y_batch.shape[0])
                 Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
                 X_batch_dropout=np.multiply(X_batch,Z)
                 grad_p=self.grad(X_batch_dropout,y_batch,par,hyper)
                 for var in par.keys():
-                    momemtum[var] = gamma * momemtum[var] + eta * grad_p[var]/y_batch.shape[0]
+                    momemtum[var] = gamma * momemtum[var] + (1.0/n_batch) * eta * grad_p[var]
                     par[var]+=momemtum[var]
-            loss_val[i]=-self.loss(X,y,par,hyper)/float(y.shape[0])
+            loss_val[i]=-1.0*self.log_likelihood(X_batch,y_batch,par,hyper)
             if verbose and (i%(epochs/10)==0):
                 print('loss: {0:.4f}'.format(loss_val[i]) )
         return par,loss_val

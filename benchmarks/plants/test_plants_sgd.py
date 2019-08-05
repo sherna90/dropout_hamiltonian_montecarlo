@@ -9,36 +9,24 @@ import time
 import h5py
 import pandas as pd
 import hamiltonian.utils as utils
-use_gpu=True
+from confusion_matrix import *
+import matplotlib.pyplot as plt 
+import seaborn as sns
+
+print('GPU/CPU: {}'.format(sys.argv[1]))
+
+if len(sys.argv)>1 and sys.argv[1]=='gpu':
+    use_gpu=True
+else:
+    use_gpu=False
+
 if use_gpu:
     import hamiltonian.gpu.softmax as softmax
 else:
     import hamiltonian.cpu.softmax as softmax
 
 
-import matplotlib.pyplot as plt 
-import seaborn as sns
-import itertools
-
-def plot_confusion_matrix(cm, classes,
-                          normalize=True,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Spectral):
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(classes)
-    plt.xticks(tick_marks, tick_marks, rotation=45,fontsize=8)
-    plt.yticks(tick_marks, tick_marks,fontsize=8)
-    fmt = '.1f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.tight_layout()
-
-eta=1e-3
+eta=1e-2
 epochs=100
 batch_size=250
 alpha=1e-2
@@ -55,8 +43,8 @@ D=X_train.shape[1]
 K=y_train.shape[1]
 import time
 
-start_p={'weights':np.zeros((D,K)),
-        'bias':np.zeros((K))}
+start_p={'weights':np.random.random((D,K)),
+        'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
 
 start_time=time.time()
@@ -71,12 +59,18 @@ print("-----------------------------------------------------------")
 plants_train.close()
 plants_test.close()
 loss=pd.DataFrame(loss_sgd)
-loss.to_csv('loss_sgd_gpu.csv',sep=',',header=False)
-plt.figure()
-plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD GPU')
-plt.savefig('plants_confusion_matrix_sgd_gpu.pdf',bbox_inches='tight')
-plt.close()
-
+if use_gpu:
+    loss.to_csv('loss_sgd_gpu.csv',sep=',',header=False)
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD GPU')
+    plt.savefig('plants_confusion_matrix_sgd_gpu.pdf',bbox_inches='tight')
+    plt.close()
+else:
+    loss.to_csv('loss_sgd_cpu.csv',sep=',',header=False)
+    plt.figure()
+    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD CPU')
+    plt.savefig('plants_confusion_matrix_sgd_cpu.pdf',bbox_inches='tight')
+    plt.close()
 """ start_time=time.time()
 par_sgd_dropout_05,loss_sgd_dropout_05=softmax.sgd_dropout(X_train,y_train,K,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=0)
 elapsed_time=time.time()-start_time 
