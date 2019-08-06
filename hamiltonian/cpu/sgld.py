@@ -38,7 +38,7 @@ class sgld(hmc):
                 q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
                 if (j%100 == 0):
                     iter_loss=-1.0*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
-                    print('minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
+                    print('burin minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
                 j+=1
         logp_samples=np.zeros(int(niter))
         if backend:

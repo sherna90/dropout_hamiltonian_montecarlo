@@ -17,14 +17,22 @@ def unwrap_self_sgld(arg, **kwarg):
 
 class sgld_multicore(sgld):
 
-    def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
+    def sample(self,epochs=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
         q=self.start
+        n_data=sgld_multicore.sample.X_train.shape[0]
         momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
         for i in tqdm(range(int(burnin)),total=int(burnin)):
-            for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
+            j=0
+            print('range:',len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size)))
+            print('ndata/batch:',int(n_data/batch_size))
+            for auxiliar in range(int(n_data/batch_size)):
                 X_batch, y_batch = sgld_multicore.sample.queue.get()
                 q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
-        logp_samples=np.zeros(int(niter))
+                if (j%100 == 0):
+                    iter_loss=-1.0*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                    print('core : {0}, minibatch : {1}, loss: {2:.4f}'.format(os.getpid(),j,iter_loss))
+                j+=1
+        loss_val=np.zeros(int(epochs))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
@@ -32,11 +40,16 @@ class sgld_multicore(sgld):
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
             momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
-            for i in tqdm(range(int(niter)),total=int(niter)):
-                for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
+            for i in tqdm(range(int(epochs)),total=int(epochs)):
+                #while not sgld_multicore.sample.queue.empty():
+                for j in range(int(n_data/batch_size)):
+                    if (j%100==0):
+                        print('core : {0}, minibatch : {1}, queue: {2:.4f}'.format(os.getpid(),j,sgld_multicore.sample.queue.qsize()))
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
-                logp_samples[i] = self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                loss_val[i] = -1.0*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                if (i % (epochs/10)==0):
+                    print('core : {0}, minibatch : {1}, loss: {2:.4f}'.format(os.getpid(),i,iter_loss))
                 for var in self.start.keys():
                     param_shape=self.start[var].shape
                     posterior[var][-1,:]=par[var]
@@ -47,20 +60,25 @@ class sgld_multicore(sgld):
         else:
             posterior={var:[] for var in self.start.keys()}
             momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
-            for i in tqdm(range(int(niter)),total=int(niter)):
-                for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
+            for i in tqdm(range(int(epochs)),total=int(epochs)):
+                print('data size:{0}, batch_size:{1}'.format(n_data,batch_size))
+                for j in range(int(n_data/batch_size)):
+                    if (j%100==0):
+                        print('core : {0}, minibatch : {1}, queue: {2:.4f}'.format(os.getpid(),j,sgld_multicore.sample.queue.qsize()))
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
                     q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
-                logp_samples[i] = -1.*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                loss_val[i] = -1.*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                if (i % (epochs/10)==0):
+                    print('loss: {0:.4f}'.format(loss_val[i]))
                 for var in self.start.keys():
                     posterior[var].append(q[var])
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-            return posterior, logp_samples
+            return posterior, loss_val
 
     def iterate_minibatches(self, X_train,y_train,queue, batch_size, total):
         for i in range(int(total)):
-            #assert X_train.shape[0] == y_train.shape[0]
+                #assert X_train.shape[0] == y_train.shape[0]
             for start_idx in range(0, X_train.shape[0] - batch_size + 1, batch_size):
                 excerpt = slice(start_idx, start_idx + batch_size)
                 queue.put((X_train[excerpt], y_train[excerpt]))
@@ -70,22 +88,24 @@ class sgld_multicore(sgld):
         sgld_multicore.sample.X_train = _X_train
         sgld_multicore.sample.y_train = _y_train
     
-    def multicore_sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None,ncores=cpu_count()):
+    def multicore_sample(self,X_train,y_train,epochs=1e4,burnin=1e3,batch_size=20,backend=None,ncores=cpu_count()):
         if backend:
             multi_backend = [backend+"_%i.h5" %i for i in range(ncores)]
         else:
             multi_backend = [backend]*ncores    
         rng = [np.random.RandomState(i) for i in range(ncores)]
         queue = Queue(maxsize=ncores)      
-        l = Process(target=sgld_multicore.iterate_minibatches, args=(self,X_train, y_train,queue, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
+        l = Process(target=sgld_multicore.iterate_minibatches, args=(self,X_train, y_train,queue, batch_size, (int(epochs/ncores)*ncores + int(burnin)*ncores)))
         p = Pool(None, sgld_multicore.sample_init, [self, queue,X_train,y_train])
         l.start()
-        results=p.map(unwrap_self_sgld, zip([self]*ncores,[int(niter/ncores)]*ncores,[int(burnin)]*ncores,[batch_size]*ncores, multi_backend,rng))
-        l.join() 
+        print('start sampling multicore!')
+        results=p.map(unwrap_self_sgld, zip([self]*ncores,[int(epochs/ncores)]*ncores,[int(burnin)]*ncores,[batch_size]*ncores, multi_backend,rng))
+        print('done sampling multicore!')
+        l.join()
         if not backend:
-            posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-            #logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return posterior,1 #logp_samples
+            posterior={var:np.concatenate([results[i][0][var] for i in range(len(results))],axis=0) for var in self.start.keys()}
+            logp_samples=np.concatenate([results[i][1] for i in range(len(results))],axis=0)
+            return posterior,logp_samples #logp_samples
         else:
-            #logp_samples=np.concatenate([r[1] for r in results],axis=0)
+            logp_samples=np.concatenate([results[i][1] for i in range(len(results))],axis=0)
             return multi_backend, 1#logp_samples
