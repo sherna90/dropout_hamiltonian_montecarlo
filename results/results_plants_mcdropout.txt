@@ -1,0 +1,13 @@
+<<<<<<< HEAD
+('MC dropout Ellapsed Time : ', 184.53)
+('MC dropout Ellapsed Time : ', 169.02)
+('MC dropout Ellapsed Time : ', 165.11999999999995)
+('SGLD Ellapsed Time : ', 42423.1)
+Method :sgld, mean : 0.9467859332770722, var:1.6759470513097146e-05
+
+=======
+('MC dropout Ellapsed Time : ', 20585.29)
+('MC dropout Ellapsed Time : ', 14611.329999999998)
+('MC dropout Ellapsed Time : ', 14361.36)
+('SGLD Ellapsed Time : ', 41960.68)
+>>>>>>> bf26943761ad702da0dbe77445725b82779aa9bc

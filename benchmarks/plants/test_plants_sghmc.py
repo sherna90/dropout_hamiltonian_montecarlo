@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt 
 import seaborn as sns
 import itertools
-
+from confusion_matrix import *
 import hamiltonian.utils as utils
 
 print('GPU/CPU: {}'.format(sys.argv[1]))
@@ -29,10 +29,10 @@ else:
     import hamiltonian.cpu.sgld as sampler
 
 eta=1e-3
-epochs=1
+epochs=1e2
 batch_size=50
 alpha=1e-2
-burnin=1
+burnin=10
 data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
 plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
@@ -49,12 +49,12 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-backend = "sgmcmc_plants.h5"
+backend = "sgmcmc_plants_2.h5"
 #backend = None
 model=softmax.SOFTMAX()
 mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
 start_time=time.time()
-posterior_sample,logp_samples=mcmc.sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend)
+posterior_sample,loss_sgld=mcmc.sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend)
 elapsed_time=time.time()-start_time 
 print("Ellapsed Time : {0:.4f}".format(elapsed_time))
 
@@ -76,15 +76,16 @@ else:
 plants_train.close()
 plants_test.close()
 
+loss=pd.DataFrame(loss_sgld)
 if use_gpu:
-    loss.to_csv('loss_sgd_gpu.csv',sep=',',header=False)
+    loss.to_csv('loss_sgld_gpu.csv',sep=',',header=False)
     plt.figure()
-    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD GPU')
-    plt.savefig('plants_confusion_matrix_sgd_gpu.pdf',bbox_inches='tight')
+    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGLD GPU')
+    plt.savefig('plants_confusion_matrix_sgld_gpu.pdf',bbox_inches='tight')
     plt.close()
 else:
-    loss.to_csv('loss_sgd_cpu.csv',sep=',',header=False)
+    loss.to_csv('loss_sgld_cpu.csv',sep=',',header=False)
     plt.figure()
-    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD CPU')
-    plt.savefig('plants_confusion_matrix_sgd_cpu.pdf',bbox_inches='tight')
+    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGLD CPU')
+    plt.savefig('plants_confusion_matrix_sgld_cpu.pdf',bbox_inches='tight')
     plt.close()

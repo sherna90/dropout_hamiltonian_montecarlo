@@ -53,21 +53,16 @@ class sgld(hmc):
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=cp.float32)
             for i in tqdm(range(int(epochs)),total=int(epochs)):
-                j=0
                 momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
-                    for var in self.start.keys():
-                        param_shape=self.start[var].shape
-                        posterior[var][-1,:]=cp.asnumpy(q[var])
-                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
-                    backend_samples.flush()
-                    if (j%100 == 0):
-                        iter_loss=-1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
-                        print('minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
-                    j+=1
+                for var in self.start.keys():
+                    param_shape=self.start[var].shape
+                    posterior[var][-1,:]=cp.asnumpy(q[var])
+                    posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
+                backend_samples.flush()
                 loss_val[i] = -1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
-                if (i%(epochs/10)==0):
+                if (i % (epochs/10)==0):
                     print('loss: {0:.4f}'.format(loss_val[i]))
             backend_samples.close()
             return backend_samples, loss_val
@@ -76,10 +71,10 @@ class sgld(hmc):
             for i in tqdm(range(int(epochs)),total=int(epochs)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q=self.step(y_train,X_batch,y_batch,q,rng)
-                    for var in self.start.keys():
-                        posterior[var].append(cp.asnumpy(q[var].reshape(-1)))
+                for var in self.start.keys():
+                    posterior[var].append(cp.asnumpy(q[var].reshape(-1)))
                 loss_val[i] = -1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
-                if (i%(epochs/10)==0):
+                if (i % (epochs/10)==0):
                     print('loss: {0:.4f}'.format(loss_val[i]))
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
@@ -93,12 +88,7 @@ class sgld(hmc):
 
     def backend_mean(self, backend, epochs):
         backend_samples=h5py.File(backend)
-        mean = {var:cp.mean(backend_samples[var][:],axis=0) for var in backend_samples.keys()}
+        mean = {var:cp.mean(cp.asarray(backend_samples[var][:]),axis=0) for var in backend_samples.keys()}
         backend_samples.close()
-        #aux = []
-        #for filename in multi_backend:
-        #    f=h5py.File(filename)
-        #    aux.append({var:cp.sum(f[var],axis=0) for var in f.keys()})
-        #mean = {var:((cp.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/epochs) for var in self.start.keys()}
         return mean
         
