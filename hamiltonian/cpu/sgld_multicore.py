@@ -18,43 +18,45 @@ def unwrap_self_sgld(arg, **kwarg):
 class sgld_multicore(sgld):
 
     def sample(self,niter=1e4,burnin=1e3,batch_size=20,backend=None,rng=None):
-        par=self.start
+        q=self.start
+        momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                 X_batch, y_batch = sgld_multicore.sample.queue.get()
-                par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-        #logp_samples=np.zeros(niter)
+                q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
+        logp_samples=np.zeros(int(niter))
         if backend:
             backend_samples=h5py.File(backend)
             posterior={}
             for var in self.start.keys():
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=np.float32)
+            momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
-                    par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-                    #logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
-                    for var in self.start.keys():
-                        param_shape=self.start[var].shape
-                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
-                        posterior[var][-1,:]=par[var]
-                    backend_samples.flush()
+                    q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
+                logp_samples[i] = self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                for var in self.start.keys():
+                    param_shape=self.start[var].shape
+                    posterior[var][-1,:]=par[var]
+                    posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
+                backend_samples.flush()
             backend_samples.close()
-            return 1, 1#logp_samples
+            return backend_samples, logp_samples
         else:
             posterior={var:[] for var in self.start.keys()}
+            momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
             for i in tqdm(range(int(niter)),total=int(niter)):
                 for auxiliar in range(len(range(0, sgld_multicore.sample.X_train.shape[0] - batch_size + 1, batch_size))):
                     X_batch, y_batch = sgld_multicore.sample.queue.get()
-                    par=self.step(sgld_multicore.sample.y_train,X_batch,y_batch,par,rng)
-                    #logp_samples[i] = self.logp(X_batch,y_batch,par,self.hyper)
-                    for var in self.start.keys():
-                        posterior[var].append(par[var].reshape(-1))
+                    q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
+                logp_samples[i] = -1.*self.model.log_likelihood(X_batch,y_batch,q,self.hyper)
+                for var in self.start.keys():
+                    posterior[var].append(q[var])
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
-                
-            return posterior, #logp_samples
+            return posterior, logp_samples
 
     def iterate_minibatches(self, X_train,y_train,queue, batch_size, total):
         for i in range(int(total)):
@@ -78,7 +80,7 @@ class sgld_multicore(sgld):
         l = Process(target=sgld_multicore.iterate_minibatches, args=(self,X_train, y_train,queue, batch_size, (int(niter/ncores)*ncores + int(burnin/ncores)*ncores)))
         p = Pool(None, sgld_multicore.sample_init, [self, queue,X_train,y_train])
         l.start()
-        results=p.map(unwrap_self_sgld, zip([self]*ncores,[int(niter/ncores)]*ncores,[int(burnin/ncores)]*ncores,[batch_size]*ncores, multi_backend,rng))
+        results=p.map(unwrap_self_sgld, zip([self]*ncores,[int(niter/ncores)]*ncores,[int(burnin)]*ncores,[batch_size]*ncores, multi_backend,rng))
         l.join() 
         if not backend:
             posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}

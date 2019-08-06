@@ -14,13 +14,12 @@ import time
 import os
 
 class hmc:
-    def __init__(self,logp, grad, start_p, hyper_p, path_length=None,verbose=True):
+    def __init__(self,model, start_p, hyper_p, path_length=None,verbose=True):
         self.start = start_p
         self.hyper = hyper_p
         self.step_size = 1.0
         self.path_length = path_length if path_length is not None else 2 * math.pi
-        self.logp = logp
-        self.grad=grad
+        self.model = model
         self._accepted=0
         self._direction=1.0
         self._mass_matrix={}
@@ -62,13 +61,13 @@ class hmc:
         q_new=deepcopy(q)
         p_new=deepcopy(p)
         cache_new=deepcopy(cache)
-        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
+        grad_q=self.model.grad(X_train,y_train,q_new,self.hyper)
         eps=1e-8
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (np.sqrt(cache_new[var]) + eps)
             q_new[var]+= epsilon[var]*p_new[var]/ (np.sqrt(cache_new[var]) + eps)
-        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
+        grad_q=self.model.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             cache_new[var] += grad_q[var]**2
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]/ (np.sqrt(cache_new[var]) + eps)
@@ -77,11 +76,11 @@ class hmc:
     def leapfrog_nocache(self,X_train, y_train,q, p,epsilon):
         q_new=deepcopy(q)
         p_new=deepcopy(p)
-        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
+        grad_q=self.model.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]
             q_new[var]+= epsilon[var]*p_new[var]
-        grad_q=self.grad(X_train,y_train,q_new,self.hyper)
+        grad_q=self.model.grad(X_train,y_train,q_new,self.hyper)
         for var in self.start.keys():
             p_new[var]+= (0.5*epsilon[var])*grad_q[var]
         return q_new, p_new
@@ -101,8 +100,8 @@ class hmc:
         return K
 
     def energy(self, X_train, y_train,q, p):
-        K=-self.potential_energy(p)
-        U=-self.logp(X_train,y_train,q,self.hyper)
+        K=-1.0*self.potential_energy(p)
+        U=-1.0*self.loss(X_train,y_train,q,self.hyper)
         return K+U 
 
 
@@ -140,7 +139,7 @@ class hmc:
 
             for i in tqdm(range(int(niter))):
                 q,p,a=self.step(q,p,rng)
-                logp_samples[i]=self.logp(X_train,y_train,q,self.hyper)
+                logp_samples[i]=self.log_likelihood(X_train,y_train,q,self.hyper)
                 for var in self.start.keys():
                     param_shape=self.start[var].shape
                     posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
@@ -153,7 +152,7 @@ class hmc:
             for i in tqdm(range(int(niter))):
                 q,p,a=self.step(X_train, y_train,q,p,rng)
                 accepted.append(a)
-                logp_samples[i]=self.logp(X_train,y_train,q,self.hyper)
+                logp_samples[i]=self.log_likelihood(X_train,y_train,q,self.hyper)
                 for var in self.start.keys():
                     posterior[var].append(q[var].reshape(-1))
                 if self._verbose:

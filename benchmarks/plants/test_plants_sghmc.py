@@ -29,10 +29,10 @@ else:
     import hamiltonian.cpu.sgld as sampler
 
 eta=1e-3
-epochs=1e2
+epochs=1
 batch_size=50
 alpha=1e-2
-burnin=10
+burnin=1
 data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
 plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
@@ -49,8 +49,8 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-backend = "sgmcmc_plants_2.h5"
-#backend = None
+#backend = "sgmcmc_plants_2.h5"
+backend = None
 model=softmax.SOFTMAX()
 mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
 start_time=time.time()
@@ -61,16 +61,16 @@ print("Ellapsed Time : {0:.4f}".format(elapsed_time))
 if backend:
     par_mean = mcmc.backend_mean(backend, epochs)
 
-    y_pred_mc=model.predict(X_test,par_mean)
-
-    print(classification_report(y_test[:].argmax(axis=1), y_pred_mc))
-    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred_mc))
+    y_pred=model.predict(X_test,par_mean)
+    cnf_matrix_sgld=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
+    print(classification_report(y_test[:].argmax(axis=1), y_pred))
+    print(cnf_matrix_sgld)
 else:
     post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-    #post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
     y_pred=model.predict(X_test,post_par)
+    cnf_matrix_sgld=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
     print(classification_report(y_test[:].argmax(axis=1), y_pred))
-    print(confusion_matrix(y_test[:].argmax(axis=1), y_pred))
+    print(cnf_matrix_sgld)
 
 
 plants_train.close()
@@ -80,12 +80,12 @@ loss=pd.DataFrame(loss_sgld)
 if use_gpu:
     loss.to_csv('loss_sgld_gpu.csv',sep=',',header=False)
     plt.figure()
-    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGLD GPU')
+    plot_confusion_matrix(cnf_matrix_sgld, classes=np.int32(K),title='SGLD GPU')
     plt.savefig('plants_confusion_matrix_sgld_gpu.pdf',bbox_inches='tight')
     plt.close()
 else:
     loss.to_csv('loss_sgld_cpu.csv',sep=',',header=False)
     plt.figure()
-    plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGLD CPU')
+    plot_confusion_matrix(cnf_matrix_sgld, classes=np.int32(K),title='SGLD CPU')
     plt.savefig('plants_confusion_matrix_sgld_cpu.pdf',bbox_inches='tight')
     plt.close()

@@ -23,6 +23,7 @@ class sgld(hmc):
         gamma=0.9
         for var in q_new.keys():
             noise_scale = 2.0*epsilon
+            sigma = np.sqrt(max(noise_scale, 1e-16)) 
             dim=q_new[var].shape
             if len(dim)==1:
                 nu=cp.random.randn(dim[0],dtype=cp.float32)
