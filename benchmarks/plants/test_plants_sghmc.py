@@ -14,6 +14,7 @@ import itertools
 from confusion_matrix import *
 import hamiltonian.utils as utils
 
+
 print('GPU/CPU: {}'.format(sys.argv[1]))
 
 if len(sys.argv)>1 and sys.argv[1]=='gpu':
@@ -26,13 +27,13 @@ if use_gpu:
     import hamiltonian.gpu.sgld as sampler
 else:
     import hamiltonian.cpu.softmax as softmax
-    import hamiltonian.cpu.sgld as sampler
+    import hamiltonian.cpu.sgld_multicore as sampler
 
 eta=1e-3
-epochs=1
+epochs=100
 batch_size=50
 alpha=1e-2
-burnin=1
+burnin=10
 data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
 plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
@@ -52,10 +53,17 @@ hyper_p={'alpha':alpha}
 #backend = "sgmcmc_plants_2.h5"
 backend = None
 model=softmax.SOFTMAX()
-mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
-start_time=time.time()
-posterior_sample,loss_sgld=mcmc.sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend)
-elapsed_time=time.time()-start_time 
+if use_gpu:
+    mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
+    start_time=time.time()
+    posterior_sample,loss_sgld=mcmc.sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend)
+    elapsed_time=time.time()-start_time
+else:
+     mcmc=sampler.sgld_multicore(model, start_p,hyper_p, path_length=1,verbose=1)
+     start_time=time.time()
+     results=mcmc.multicore_sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend,ncores=4)
+     elapsed_time=time.time()-start_time
+
 print("Ellapsed Time : {0:.4f}".format(elapsed_time))
 
 if backend:

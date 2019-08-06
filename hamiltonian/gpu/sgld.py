@@ -37,14 +37,14 @@ class sgld(hmc):
     def sample(self,X_train,y_train,epochs=1e4,burnin=1e3,batch_size=20,backend=None):
         rng = cp.random.RandomState()
         q={var:cp.asarray(self.start[var]) for var in self.start.keys()}
+        momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
         for i in tqdm(range(int(burnin)),total=int(burnin)):
             j=0
-            momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
             for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                 q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
                 if (j%100 == 0):
                     iter_loss=-1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
-                    print('minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
+                    print('burin minibatch : {0}, loss: {1:.4f}'.format(j,iter_loss))
                 j+=1
         loss_val=np.zeros(int(epochs))
         if backend:
@@ -53,8 +53,8 @@ class sgld(hmc):
             for var in self.start.keys():
                 param_shape=self.start[var].shape
                 posterior[var]=backend_samples.create_dataset(var,(1,)+param_shape,maxshape=(None,)+param_shape,dtype=cp.float32)
+            momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
             for i in tqdm(range(int(epochs)),total=int(epochs)):
-                momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
                     q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
                 for var in self.start.keys():
@@ -69,9 +69,10 @@ class sgld(hmc):
             return backend_samples, loss_val
         else:
             posterior={var:[] for var in self.start.keys()}
+            momentum={var:cp.zeros_like(cp.asarray(self.start[var])) for var in self.start.keys()}
             for i in tqdm(range(int(epochs)),total=int(epochs)):
                 for X_batch, y_batch in self.iterate_minibatches(X_train, y_train, batch_size):
-                    q=self.step(y_train,X_batch,y_batch,q,rng)
+                    q,momentum=self.step(momentum,X_batch,y_batch,q,rng)
                 for var in self.start.keys():
                     posterior[var].append(cp.asnumpy(q[var].reshape(-1)))
                 loss_val[i] = -1.0*cp.asnumpy(self.model.log_likelihood(X_batch,y_batch,q,self.hyper))
