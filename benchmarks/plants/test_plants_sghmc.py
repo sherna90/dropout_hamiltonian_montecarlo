@@ -26,21 +26,30 @@ if use_gpu:
     import hamiltonian.gpu.sgld as sampler
 else:
     import hamiltonian.cpu.softmax as softmax
-    import hamiltonian.cpu.sgld as sampler
+    import hamiltonian.cpu.sgld_multicore as sampler
 
 eta=1e-3
-epochs=1
+epochs=4
 batch_size=50
 alpha=1e-2
-burnin=1
-data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
+burnin=4
+data_path = '../../data/'
+#data_path = '/home/sergio/data/PlantVillage-Dataset/balanced_train_test/features/'
 
+'''
 plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
 X_train=plants_train['features']
 y_train=plants_train['labels']
 plants_test=h5py.File(data_path+'plant_village_val.hdf5','r')
 X_test=plants_test['features']
-y_test=plants_test['labels']
+y_test=plants_test['labels']'''
+
+plants_train=h5py.File(data_path+'train_features_labels.h5','r')
+X_train=plants_train['train_features']
+y_train=plants_train['train_labels']
+plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
+X_test=plants_test['validation_features']
+y_test=plants_test['validation_labels']
 
 D=X_train.shape[1]
 K=y_train.shape[1]
@@ -49,17 +58,20 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-#backend = "sgmcmc_plants_2.h5"
-backend = None
+backend = "test2_hdf" #sin el .h5, se genera de manera automática para single core y multi core.
+#backend = None
 model=softmax.SOFTMAX()
-mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
+mcmc=sampler.sgld_multicore(model, start_p,hyper_p, path_length=1,verbose=1)
 start_time=time.time()
-posterior_sample,loss_sgld=mcmc.sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend)
+posterior_sample,loss_sgld=mcmc.multicore_sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend, ncores=2)
 elapsed_time=time.time()-start_time 
 print("Ellapsed Time : {0:.4f}".format(elapsed_time))
 
 if backend:
-    par_mean = mcmc.backend_mean(backend, epochs)
+    backend_name = posterior_sample
+    #En caso de haber backend la variable "posterior_sample" trae los nombres de los archivos h5
+    #creados con el proceso de backend.
+    par_mean = mcmc.backend_mean(backend_name, epochs)
 
     y_pred=model.predict(X_test,par_mean)
     cnf_matrix_sgld=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
