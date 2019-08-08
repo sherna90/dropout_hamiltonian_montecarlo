@@ -29,6 +29,9 @@ class sgld(hmc):
 
 
     def sample(self,X_train,y_train,niter=1e4,burnin=1e3,batch_size=20,backend=None):
+        if backend:
+            backend = backend+".h5"
+
         rng = np.random.RandomState()
         q=self.start
         momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
@@ -58,7 +61,10 @@ class sgld(hmc):
                     posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                 backend_samples.flush()
             backend_samples.close()
-            return [backend], logp_samples
+            return [backend] , logp_samples
+            #retorna el nombre del backend para que quede genérico junto con el multicore.
+            #Se retorna [backend] en forma de lista para que sean recorridos
+            #los distintos archivos de backend.
         else:
             posterior={var:[] for var in self.start.keys()}
             momentum={var:np.zeros_like(self.start[var]) for var in self.start.keys()}
@@ -71,16 +77,28 @@ class sgld(hmc):
             for var in self.start.keys():
                 posterior[var]=np.array(posterior[var])
             return posterior,logp_samples
-            
+            #retorna posterir debido a que hay posterior_samples en memoria ram.
+
     def iterate_minibatches(self,X_train,y_train,batchsize):
         assert X_train.shape[0] == y_train.shape[0]
         for start_idx in range(0, X_train.shape[0] - batchsize + 1, batchsize):
             excerpt = slice(start_idx, start_idx + batchsize)
             yield X_train[excerpt], y_train[excerpt]
 
-    def backend_mean(self, backend, niter):
-        backend_samples=h5py.File(backend)
-        mean = {var:np.mean(backend_samples[var][:],axis=0) for var in backend_samples.keys()}
-        backend_samples.close()
+    def backend_mean(self, backend_name, niter):
+        aux = []
+        for filename in backend_name:
+            f=h5py.File(filename, 'r')
+            aux.append({var:np.sum(f[var],axis=0) for var in f.keys()})
+        mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return mean
+    #No se usa el otro método, debido a que no se puede sacar la media de las medias, sino
+    #sacar la suma total de todos los archivos .h5 y luego sacar la media total.
+
+    #def backend_mean(self, backend_name, niter):
+    #    for f in backend_name:
+    #        backend_samples=h5py.File(f)
+    #        mean = {var:np.mean(backend_samples[var][:],axis=0) for var in backend_samples.keys()}
+    #        backend_samples.close()
+    #    return mean
         
