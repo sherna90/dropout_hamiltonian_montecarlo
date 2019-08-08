@@ -50,8 +50,8 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-#backend = "sgmcmc_plants_2.h5"
-backend = None
+backend = "sgmcmc_plants.h5"
+#backend = None
 model=softmax.SOFTMAX()
 if use_gpu:
     mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
@@ -61,7 +61,7 @@ if use_gpu:
 else:
      mcmc=sampler.sgld_multicore(model, start_p,hyper_p, path_length=1,verbose=1)
      start_time=time.time()
-     results=mcmc.multicore_sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend,ncores=4)
+     posterior_sample,loss_sgld=mcmc.multicore_sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend,ncores=2)
      elapsed_time=time.time()-start_time
 
 print("Ellapsed Time : {0:.4f}".format(elapsed_time))
