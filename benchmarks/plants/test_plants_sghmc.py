@@ -43,7 +43,6 @@ plants_test=h5py.File(data_path+'plant_village_val.hdf5','r')
 X_test=plants_test['features']
 y_test=plants_test['labels']
 
-
 D=X_train.shape[1]
 K=y_train.shape[1]
 import time
@@ -51,8 +50,8 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-#backend = "sgmcmc_plants.h5"
-backend = None
+backend = "sgmcmc_plants" #Sin el .h5, se agrega de forma automática.
+#backend = None
 model=softmax.SOFTMAX()
 if use_gpu:
     mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
