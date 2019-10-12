@@ -13,7 +13,9 @@ import seaborn as sns
 import itertools
 from confusion_matrix import *
 import hamiltonian.utils as utils
-
+from scipy.special import logsumexp
+import pandas as pd
+import pickle
 
 print('GPU/CPU: {}'.format(sys.argv[1]))
 
@@ -52,13 +54,18 @@ start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
 
-backend = "sgmcmc_plants.h5"
+backend = "sgmcmc_plants_gpu.h5"
 model=softmax.SOFTMAX()
 theta=h5py.File(backend,'r')
 
 model_predictions=[]
 for i in range(theta['weights'].shape[0]):
     post_par={'weights':theta['weights'][i],'bias':theta['bias'][i]}
-    y_linear=model.net(X_test,post_par)
-    softmax=model.softmax(y_linear)
-    model_predictions.append(softmax)
+    y_linear = np.dot(X_test[1,:], post_par['weights']) + post_par['bias']
+    lse=logsumexp(y_linear)
+    y_hat=y_linear-np.repeat(lse,len(y_linear)).reshape(y_linear.shape)
+    model_predictions.append(y_hat)
+
+model_predictions=np.array(model_predictions)
+my_df = pd.DataFrame(model_predictions) 
+my_df.to_csv('predictions.csv', index = False)  

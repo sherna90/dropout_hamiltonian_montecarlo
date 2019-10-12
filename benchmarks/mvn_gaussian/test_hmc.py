@@ -1,30 +1,24 @@
 import numpy as np
-import seaborn as sns
-import sys 
-import pandas as pd
 import matplotlib.pyplot as plt
-sys.path.append("./") 
+import seaborn as sns
+sns.set()
+from importlib import reload
+import sys
 
-use_gpu=False
-import hamiltonian.mvn_gaussian as mvn_gaussian
+sys.path.append('./')
 
-import hamiltonian.hmc as hmc
-from scipy import stats
+import hamiltonian.models.cpu.gaussian as model
+import hamiltonian.inference.cpu.hmc as sampler
+m=model.gaussian({'mu':0,'sigma':0.1})
+hmc=sampler.hmc(m,start_p={'x':np.random.rand()},path_length=1,step_size=0.01) 
+samples,positions,momentums,logp=hmc.sample(50,100)
 
-start_p={'mu':10*np.random.randn(2)}
-hyper_p={'cov':np.array([[1.0,0.8],[0.8,1.0]])}
-mcmc=hmc.HMC(np.array(2),np.array(0),mvn_gaussian.loss, mvn_gaussian.grad, start_p,hyper_p, path_length=10,verbose=1)
-posterior_sample,logp_samples=mcmc.sample(1e3,1e2)
-post_par={'mu':np.mean(posterior_sample['mu'],axis=0).reshape(start_p['mu'].shape)}
+fig, ax = plt.subplots(figsize=(10,7))
+for pos,mom in zip(positions,momentums):
+    ax.plot([float(q['x']) for q in pos], [float(p['x']) for p in mom])
 
-b_cols=columns=['x', 'y']
-b_sample = pd.DataFrame(posterior_sample['mu'], columns=b_cols)
-
-print(b_sample.describe())
-sns.set_context("notebook", font_scale=1.1, rc={"lines.linewidth": 2.5})
-g = sns.jointplot(x="x", y="y", data=b_sample, kind="kde", color="k", shade=True)
-g.plot_joint(plt.scatter, c="r", s=30, linewidth=1, marker="+")
-g = g.annotate(stats.pearsonr)
-g.ax_joint.collections[0].set_alpha(0.5)
-g.set_axis_labels("$X$", "$Y$")
+y_min, _ = ax.get_ylim()
+ax.plot(samples['x'], y_min + np.zeros_like(samples['x']), "ko")
+ax.set_xlabel("Position")
+ax.set_ylabel("Momentum")
 plt.show()
