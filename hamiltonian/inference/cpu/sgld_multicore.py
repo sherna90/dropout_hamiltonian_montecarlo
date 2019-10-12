@@ -46,11 +46,12 @@ class sgld_multicore(sgld):
                 q,momentum,final_loss=self.single_epoch(q,momentum,n_data,batch_size,rng)
                 loss_val[i] = final_loss
                 if (i % (epochs/10)==0):
-                    print('core : {0}, minibatch : {1}, loss: {2:.4f}'.format(os.getpid(),i,iter_loss))
+                    print('core : {0}, minibatch : {1}, loss: {2:.4f}'.format(os.getpid(),i,loss_val[i]))
                 for var in self.start.keys():
                     param_shape=self.start[var].shape
-                    posterior[var][-1,:]=par[var]
-                    posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
+                    posterior[var][-1,:]=q[var]
+                    if i<int(epochs-1):
+                        posterior[var].resize((posterior[var].shape[0]+1,)+param_shape)
                 backend_samples.flush()
             backend_samples.close()
             return backend_samples, loss_val

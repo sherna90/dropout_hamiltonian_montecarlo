@@ -9,7 +9,7 @@ import cupy as cp
 from cupy.linalg import norm
 import time
 
-class SOFTMAX:
+class softmax:
     def __init__(self):
         pass
 

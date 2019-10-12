@@ -21,10 +21,8 @@ X = (X - X.mean(axis=0)) / X.std(axis=0)
 X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 with pm.Model() as model_s:
-    alpha = pm.Normal('alpha', mu=0, sd=2, shape=3)
-    beta = pm.Normal('beta', mu=0, sd=2, shape=(4,3))
-    #alpha_f = tt.concatenate([[0],alpha])
-    #beta_f = tt.concatenate([np.zeros((4,1),beta)],axis=1)
+    alpha = pm.Normal('alpha', mu=0, sd=10, shape=3)
+    beta = pm.Normal('beta', mu=0, sd=10, shape=(4,3))
     mu = alpha + pm.math.dot(X_train, beta)
     theta = tt.nnet.softmax(mu)
     yl = pm.Categorical('yl', p=theta, observed=y_train)

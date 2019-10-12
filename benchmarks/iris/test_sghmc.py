@@ -15,16 +15,14 @@ import pandas as pd
 import time
 
 sys.path.append("../../") 
-import hamiltonian.cpu.softmax as softmax
-import hamiltonian.cpu.sgld_multicore as sampler
+import hamiltonian.models.cpu.softmax as model
+import hamiltonian.inference.cpu.hmc as sampler
 import hamiltonian.utils as utils
 
 niter = 2e3
 burnin = 300
-backend = 'iris'
-#backend = None
 
-alpha=1./4.
+alpha=0.01
 path_length=1
 iris = datasets.load_iris()
 classes=np.unique(iris.target)
@@ -36,30 +34,19 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle
 
 D=X_train.shape[1]
 num_classes=len(classes)
-start_p={'weights':np.random.randn(D,num_classes),
+p0={'weights':np.random.randn(D,num_classes),
         'bias':np.random.randn(num_classes)}
-hyper_p={'alpha':alpha}
+hyper={'alpha':alpha}
 
-model=softmax.SOFTMAX()
-inference=sampler.sgld_multicore(model.log_likelihood, model.grad, start_p,hyper_p, path_length=path_length,verbose=0)
-t0=time.time()
-posterior_sample,logp_samples=inference.multicore_sample(X_train,y_train,niter=niter,burnin=burnin,backend=backend, ncores=2)
-t1=time.time()
-print("Ellapsed Time : ",t1-t0)
+m=model.softmax(hyper)
+hmc=sampler.hmc(m,p0,path_length=20,step_size=0.01) 
+samples,positions,momentums,logp=hmc.sample(100,100,rng=None,X_train=X_train,y_train=y_train)
 
-if backend:
-    par_mean = inference.backend_mean(posterior_sample, niter)
-
-    y_pred_mc=model.predict(X_test.copy(),par_mean)
-
-    print(classification_report(y_test.copy().argmax(axis=1), y_pred_mc))
-    print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred_mc))
-else:
-    post_par={var:np.mean(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-    #post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
-    y_pred=model.predict(X_test.copy(),post_par)
-    print(classification_report(y_test.copy().argmax(axis=1), y_pred))
-    print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
+post_par={var:np.median(samples[var],axis=0).reshape(p0[var].shape) for var in samples.keys()}
+#post_par_var={var:np.var(posterior_sample[var],axis=0).reshape(start_p[var].shape) for var in posterior_sample.keys()}
+y_pred=m.predict(post_par,X_test)
+print(classification_report(y_test.argmax(axis=1), y_pred))
+print(confusion_matrix(y_test.copy().argmax(axis=1), y_pred))
 
 '''
 b_cols=columns=['b1', 'b2','b3']

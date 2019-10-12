@@ -5,16 +5,13 @@ from sklearn import datasets
 import numpy as np
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+
 import sys 
-sys.path.append("../../") 
-
-import hamiltonian.gpu.softmax as softmax
+sys.path.append('./')
 import hamiltonian.utils as utils
-
-epochs = 1e4
-eta=1e-3
-batch_size=50
-alpha=1/10.
+import hamiltonian.models.cpu.softmax as base_model
+import hamiltonian.inference.cpu.sgd as inference
 
 iris = datasets.load_iris()
 data = iris.data  
@@ -29,22 +26,27 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle
 
 D=X_train.shape[1]
 K=len(classes)
-start_p={'weights':np.zeros((D,K)),
-        'bias':np.zeros((K))}
+
+
+epochs = 1e4
+eta=1e-1
+batch_size=30
+alpha=1/1000.
+
+start_p={'weights':np.random.random((D,K)),
+        'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-model=softmax.SOFTMAX()
-par,loss=model.sgd(X_train,y_train,num_classes,start_p,hyper_p,eta=eta,epochs=epochs,batch_size=batch_size,verbose=1)
-y_pred=model.predict(X_test,par)
+
+model=base_model.softmax(hyper_p)
+sgd=inference.sgd(model,eta=eta,epochs=epochs,gamma=0.9,batch_size=batch_size)
+par,loss=sgd.fit_dropout(start_p,X_train,y_train,p=0.9)
+y_pred=model.predict_stochastic(par,X_test,p=0.9)
+
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
-print('-------------------------------------------')
-from sklearn.linear_model import LogisticRegression
-softmax_reg = LogisticRegression(multi_class="multinomial", solver="newton-cg", C=1/alpha,fit_intercept=True)
-softmax_reg.fit(X_train,np.argmax(y_train,axis=1))
-y_pred2 = softmax_reg.predict(X_test)
-print(classification_report(y_test.argmax(axis=1), y_pred2))
-print(confusion_matrix(y_test.argmax(axis=1), y_pred2))
-print(softmax_reg.intercept_)
-
-print("LISTO!")
+fig, ax = plt.subplots(figsize=(10,7))
+ax.plot(loss)
+ax.set_xlabel("Epochs")
+ax.set_ylabel("Log-loss")
+plt.show()

@@ -13,7 +13,7 @@ import seaborn as sns
 import itertools
 from confusion_matrix import *
 import hamiltonian.utils as utils
-
+import pickle
 
 print('GPU/CPU: {}'.format(sys.argv[1]))
 
@@ -50,8 +50,8 @@ import time
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
-backend = "sgmcmc_plants" #Sin el .h5, se agrega de forma automática.
-#backend = None
+#backend = "sgmcmc_plants_cpu" 
+backend = None
 model=softmax.SOFTMAX()
 if use_gpu:
     mcmc=sampler.sgld(model, start_p,hyper_p, path_length=1,verbose=1)
@@ -63,6 +63,7 @@ else:
      start_time=time.time()
      posterior_sample,loss_sgld=mcmc.multicore_sample(X_train,y_train,epochs,burnin,batch_size=batch_size, backend=backend,ncores=4)
      elapsed_time=time.time()-start_time
+     pickle.dump(posterior_sample, open("sgmcmc_plants_cpu.pkls", "wb"))
 
 print("Ellapsed Time : {0:.4f}".format(elapsed_time))
 
