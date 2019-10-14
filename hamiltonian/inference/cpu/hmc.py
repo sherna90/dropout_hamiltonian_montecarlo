@@ -46,17 +46,17 @@ class hmc:
         path_length=np.ceil(2*np.random.rand()*self.path_length/epsilon)
         grad_q=self.model.grad(q,**args)
         for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon)*grad_q[var]/norm(grad_q[var]) 
-        for i,_ in  enumerate(np.arange(path_length)):
+            p_new[var]-= (0.5*epsilon)*grad_q[var] 
+        for _ in np.arange(path_length):
             q_new[var]+= epsilon*p_new[var]
             grad_q=self.model.grad(q_new,**args)
-            p_new[var]-= epsilon*grad_q[var]/norm(grad_q[var])
+            p_new[var]-= epsilon*grad_q[var]
             positions.append(deepcopy(q_new)) 
             momentums.append(deepcopy(p_new)) 
         for var in self.start.keys():
             q_new[var]+= epsilon*p_new[var]
             grad_q=self.model.grad(q_new,**args)
-            p_new[var]=-(0.5*epsilon)*grad_q[var]/norm(grad_q[var])
+            p_new[var]=-epsilon*grad_q[var]
         acceptprob = self.accept(q, q_new, p, p_new,**args)
         if np.isfinite(acceptprob) and (np.random.rand() < acceptprob): 
             q = q_new.copy()
@@ -76,7 +76,7 @@ class hmc:
         for var in p.keys():
             dim=(np.array(p[var])).size
             #K-=0.5*np.sum(self._inv_mass_matrix[var].reshape(self.start[var].shape)*np.square(p[var]))
-            K = 0.5*(dim*np.log(2*np.pi)+np.sum(np.square(p[var])))
+            K-=0.5*(dim*np.log(2*np.pi)+np.sum(np.square(p[var])))
         return K
 
 
@@ -95,9 +95,6 @@ class hmc:
 
     def sample(self,niter=1e4,burnin=1e3,rng=None,**args):
         print(niter)
-        #print(burnin)
-        #print(rng)
-        #print(**args)
         if rng == None:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
