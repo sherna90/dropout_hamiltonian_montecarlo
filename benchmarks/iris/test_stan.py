@@ -10,17 +10,14 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 plt.style.use('seaborn-white')
 
-sys.path.append("../../") 
-import hamiltonian.cpu.softmax as softmax
-
-scaler = StandardScaler()
 iris = datasets.load_iris()
-data = iris.data 
-labels = iris.target + 1 
+data = iris.data  
+labels = iris.target
 classes=np.unique(iris.target)
-X, y = iris.data, iris.target + 1 
-X=scaler.fit_transform(X)
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0)
+X, y = iris.data, iris.target
+y=y+1
+X = (X - X.mean(axis=0)) / X.std(axis=0)
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
 
 #Gaussian-prior stan model
 model_code = """
@@ -43,11 +40,11 @@ transformed parameters {
 model {
   for (i in 1:D){
     for (j in 1:K){
-      weights[i,j] ~ normal(0, 2);
+      weights[i,j] ~ normal(0, 10);
     }
   }
   for (k in 1:K){
-      bias[k] ~ normal(0, 2);
+      bias[k] ~ normal(0, 10);
   }
   for (n in 1:N)
     y[n] ~ categorical(theta[n]);
@@ -58,7 +55,7 @@ N, D = X_train.shape
 K=len(classes)
 data = dict(N=N, D=D,K=K, X=X_train, y=y_train)
 
-algorithm="HMC" #put NUTS or HMC
+algorithm="NUTS" #put NUTS or HMC
 iterations=2000 #iterations of algorithm
 
 print (" ------------------------------------------------------------------------------------------------------------")
@@ -72,12 +69,6 @@ print (" -----------------------------------------------------------------------
 fit = pystan.stan(model_code=model_code, data=data, seed=5, iter=iterations, algorithm=algorithm)
 
 post_par={'weights':np.mean(fit.extract()['weights'], axis=0),'bias':np.mean(fit.extract()['bias'], axis=0)}
-
-soft=softmax.SOFTMAX()
-
-y_pred=soft.predict(X_test,post_par)
-print(classification_report(y_test, y_pred))
-print(confusion_matrix(y_test, y_pred))
 
 import pandas as pd
 
