@@ -30,8 +30,8 @@ D=X_train.shape[1]
 K=len(classes)
 
 
-niter = 1e4
-burnin=1e3
+niter = 1e3
+burnin=1e2
 eta=1e-3
 alpha=1/100.
 
@@ -40,7 +40,7 @@ start_p={'weights':np.random.random((D,K)),
 hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
-hmc=sampler.hmc(model,start_p,path_length=1,step_size=eta)
+hmc=sampler.hmc(model,start_p,path_length=5,step_size=eta)
 samples,positions,momentums,logp=hmc.sample(niter,burnin,None,X_train=X_train,y_train=y_train)
 
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
@@ -87,4 +87,37 @@ beta__2_1 -0.004414  1.191844  0.021374 -2.242231  2.452480  2575.181436  0.9999
 beta__2_2 -0.006487  1.193235  0.021208 -2.322853  2.409378  2587.128418  0.999824
 beta__3_0  0.040402  1.172653  0.022603 -2.338267  2.272882  2988.843195  0.999560
 beta__3_1  0.040275  1.172706  0.022470 -2.353356  2.269792  2998.609428  0.999556
-beta__3_2  0.042598  1.169505  0.022553 -2.318622  2.292795  2966.418511  0.999546 """
+beta__3_2  0.042598  1.169505  0.022553 -2.318622  2.292795  2966.418511  0.999546 
+
+stan optim
+Initial log joint probability = -154.447
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      19      -5.28956         1.536      0.209354           1           1       25   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      39      -5.17018     0.0196875      0.048719      0.6426      0.6426       46   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      59      -5.16212    0.00998317    0.00733584           1           1       67   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      79      -5.16191    0.00399693    0.00122098           1           1       88   
+    Iter      log prob        ||dx||      ||grad||       alpha      alpha0  # evals  Notes 
+      95       -5.1619   0.000350597   8.36027e-05      0.8737      0.8737      105  
+
+>>> print(op['weights'])
+[[-2.16871943  2.49226699 -0.32759529]
+ [ 2.51667281 -0.4296626  -2.08424852]
+ [-5.74229906 -4.28517259 10.02485957]
+ [-5.15459595 -0.73729125  5.887566  ]]
+>>> print(op['bias'])
+[ 0.18269953  6.29433656 -6.4741582 ]
+
+
+                b1           b2           b3
+count  4000.000000  4000.000000  4000.000000
+mean     -2.794040     9.738752    -7.282612
+std       7.367385     6.303184     6.797948
+min     -33.081503   -11.519215   -33.761193
+25%      -7.527263     5.436548   -11.624500
+50%      -2.646370     9.659394    -7.255833
+75%       2.156013    14.024002    -2.812740
+max      19.868073    35.792211    15.617151
+"""

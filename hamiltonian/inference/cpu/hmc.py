@@ -1,5 +1,6 @@
 import numpy as np
 from hamiltonian.utils import *
+import hamiltonian.inference.cpu.find_reasonable_epsilon as find_reasonable_epsilon
 from numpy.linalg import inv,norm
 from copy import deepcopy
 from tqdm import tqdm, trange
@@ -26,9 +27,12 @@ class hmc:
         self.verbose=verbose
 
 
-    def step(self,state,momentum,rng,**args):
+    def step(self,state,momentum,rng,find_reasonable_epsilon=None,**args):
         q = state.copy()
         p = self.draw_momentum(rng)
+        for var in self.start.keys():
+            p[var]*=0.9
+            p[var]+=.1*momentum[var]
         q_new = deepcopy(q)
         p_new = deepcopy(p)
         positions, momentums = [deepcopy(q)], [deepcopy(p)]
@@ -47,7 +51,7 @@ class hmc:
         for var in self.start.keys():
             p_new[var]=-p_new[var]
         acceptprob=self.accept(q, q_new, p, p_new,**args)
-        if np.isfinite(acceptprob) and (rng.rand() < acceptprob): 
+        if np.isfinite(acceptprob) and (np.random.rand() < acceptprob): 
             q = q_new.copy()
             p = p_new.copy()
         return q,p,positions, momentums
@@ -91,16 +95,16 @@ class hmc:
         if rng == None:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
-        #hmcself.find_reasonable_epsilon(q,rng,**args)
+        step_size_tuning = find_reasonable_epsilon(initial_step_size=step_size)
         for _ in tqdm(range(int(burnin))):
-            q,p,positions,momentums=self.step(q,p,rng,**args)
+            q,p,positions,momentums=self.step(q,p,rng,step_size_tuning,**args)
         logp_samples=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []
         posterior={var:[] for var in self.start.keys()}
         for i in tqdm(range(int(niter))):
-            q,p,positions,momentums=self.step(q,p,rng,**args)
-            sample_positions.append(positions)
-            sample_momentums.append(momentums)
+            q,p,positions,momentums=self.step(q,p,rng,None,**args)
+            #sample_positions.append(positions)
+            #sample_momentums.append(momentums)
             logp_samples[i]=-1.0*self.model.logp(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
