@@ -30,9 +30,9 @@ D=X_train.shape[1]
 K=len(classes)
 
 
-niter = 1e3
-burnin=1e2
-eta=1e-3
+niter = 1e4
+burnin=1e3
+eta=0.1
 alpha=1/100.
 
 start_p={'weights':np.random.random((D,K)),
@@ -40,7 +40,7 @@ start_p={'weights':np.random.random((D,K)),
 hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
-hmc=sampler.hmc(model,start_p,path_length=5,step_size=eta)
+hmc=sampler.hmc(model,start_p,path_length=10,step_size=eta)
 samples,positions,momentums,logp=hmc.sample(niter,burnin,None,X_train=X_train,y_train=y_train)
 
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
