@@ -10,8 +10,8 @@ sys.path.append('./')
 import hamiltonian.models.cpu.gaussian as model
 import hamiltonian.inference.cpu.hmc as sampler
 m=model.gaussian({'mu':0,'sigma':0.1})
-hmc=sampler.hmc(m,start_p={'x':np.random.rand()},path_length=1,step_size=0.1) 
-samples,positions,momentums,logp=hmc.sample(100,500)
+hmc=sampler.hmc(m,start_p={'x':np.random.rand()},path_length=1,step_size=0.01) 
+samples,positions,momentums,logp=hmc.sample(50,100)
 
 fig, ax = plt.subplots(figsize=(10,7))
 for pos,mom in zip(positions,momentums):

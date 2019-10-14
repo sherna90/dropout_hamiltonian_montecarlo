@@ -12,7 +12,7 @@ import hamiltonian.models.cpu.mvn_gaussian as model
 import hamiltonian.inference.cpu.hmc as sampler
 m=model.mvn_gaussian({'mu':np.zeros(2),'cov':np.array([[1.0, 0.8], [0.8, 1.0]])})
 hmc=sampler.hmc(m,start_p={'x':np.random.rand(2)},path_length=1,step_size=0.1) 
-samples,positions,momentums,logp=hmc.sample_multicore(100,100)
+samples,positions,momentums,logp=hmc.sample(100,100)
 
 steps = slice(None, None, 20)
 fig, ax = plt.subplots(figsize=(10,7))
