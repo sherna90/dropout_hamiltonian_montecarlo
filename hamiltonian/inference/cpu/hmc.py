@@ -25,42 +25,49 @@ class hmc:
                 self._mass_matrix[var]=np.ones(dim)
                 self._inv_mass_matrix[var]=np.ones(dim)
         self.verbose=verbose
+        # dual averaging parameters
+        self.mu = np.log(10 * self.step_size)  # proposals are biased upwards to stay away from 0.
+        self.target_accept = 0.65
+        self.gamma = 0.05
+        self.t0 = 10.0
+        self.t = 0
+        self.kappa = 0.75
+        self.error_sum = 0.0
+        self.log_averaged_step = 0.0
 
 
-    def step(self,state,momentum,rng,find_reasonable_epsilon=None,**args):
+    def step(self,state,momentum,rng,**args):
         q = state.copy()
         p = self.draw_momentum(rng)
-        for var in self.start.keys():
-            p[var]*=0.9
-            p[var]+=.1*momentum[var]
         q_new = deepcopy(q)
         p_new = deepcopy(p)
         positions, momentums = [deepcopy(q)], [deepcopy(p)]
-        path_length=2 * np.random.rand() * self.path_length
         epsilon=self.step_size
-        grad_q=self.model.grad(q_new,**args)
-        for _ in range(int(path_length/epsilon)):
-            for var in self.start.keys():
-                p_new[var]-= (0.5*epsilon)*grad_q[var]
-                q_new[var]+= epsilon*p_new[var]
+        path_length=np.ceil(2*np.random.rand()*self.path_length/epsilon)
+        grad_q=self.model.grad(q,**args)
+        for var in self.start.keys():
+            p_new[var]-= (0.5*epsilon)*grad_q[var]/norm(grad_q[var]) 
+        for i,_ in  enumerate(np.arange(path_length)):
+            q_new[var]+= epsilon*p_new[var]
             grad_q=self.model.grad(q_new,**args)
-            for var in self.start.keys():
-                p_new[var]-= (0.5*epsilon)*grad_q[var]
+            p_new[var]-= epsilon*grad_q[var]/norm(grad_q[var])
             positions.append(deepcopy(q_new)) 
             momentums.append(deepcopy(p_new)) 
         for var in self.start.keys():
-            p_new[var]=-p_new[var]
-        acceptprob=self.accept(q, q_new, p, p_new,**args)
+            q_new[var]+= epsilon*p_new[var]
+            grad_q=self.model.grad(q_new,**args)
+            p_new[var]=-(0.5*epsilon)*grad_q[var]/norm(grad_q[var])
+        acceptprob = self.accept(q, q_new, p, p_new,**args)
         if np.isfinite(acceptprob) and (np.random.rand() < acceptprob): 
             q = q_new.copy()
             p = p_new.copy()
-        return q,p,positions, momentums
+        return q,p,positions, momentums,acceptprob
 
 
     def accept(self,current_q, proposal_q, current_p, proposal_p,**args):
-        E_new = self.energy(proposal_q,proposal_p,**args)
-        E_current = self.energy(current_q,current_p,**args)
-        A = min(1,np.exp(E_current - E_new))
+        E_new = -1.0*(self.model.logp(proposal_q,**args)+self.potential_energy(proposal_p))
+        E_current = -1.0*(self.model.logp(current_q,**args)+self.potential_energy(current_p))
+        A = min(1,np.exp(E_new-E_current))
         return A
 
 
@@ -69,13 +76,8 @@ class hmc:
         for var in p.keys():
             dim=(np.array(p[var])).size
             #K-=0.5*np.sum(self._inv_mass_matrix[var].reshape(self.start[var].shape)*np.square(p[var]))
-            K-=0.5*(dim*np.log(2*np.pi)+np.sum(np.square(p[var])))
+            K = 0.5*(dim*np.log(2*np.pi)+np.sum(np.square(p[var])))
         return K
-
-    def energy(self, q, p,**args):
-        K=self.potential_energy(p)
-        U=self.model.logp(q,**args)
-        return K+U 
 
 
     def draw_momentum(self,rng):
@@ -92,19 +94,25 @@ class hmc:
 
 
     def sample(self,niter=1e4,burnin=1e3,rng=None,**args):
+        print(niter)
+        #print(burnin)
+        #print(rng)
+        #print(**args)
         if rng == None:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
-        step_size_tuning = find_reasonable_epsilon(initial_step_size=step_size)
+        step_size_tuning = DualAveragingStepSize(self.step_size)
         for _ in tqdm(range(int(burnin))):
-            q,p,positions,momentums=self.step(q,p,rng,step_size_tuning,**args)
+            q,p,positions,momentums,p_accept=self.step(q,p,rng,**args)
+            #self.step_size,_=step_size_tuning.update(p_accept)
+        #_,self.step_size=step_size_tuning.update(p_accept)
         logp_samples=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []
         posterior={var:[] for var in self.start.keys()}
         for i in tqdm(range(int(niter))):
-            q,p,positions,momentums=self.step(q,p,rng,None,**args)
-            #sample_positions.append(positions)
-            #sample_momentums.append(momentums)
+            q,p,positions,momentums,_=self.step(q,p,rng,**args)
+            sample_positions.append(positions)
+            sample_momentums.append(momentums)
             logp_samples[i]=-1.0*self.model.logp(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
@@ -115,22 +123,15 @@ class hmc:
         return posterior,sample_positions,sample_momentums,logp_samples
 
             
-    def find_reasonable_epsilon(self,state,rng,**args):
-        q =state.copy()
-        p = self.draw_momentum(rng)
-        direction = 1.0 if rng.rand() > 0.5 else -1.0
-        epsilon={var:direction*self.step_size for var in self.start.keys()}
-        cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
-        #q_new, p_new,cache = self.leapfrog(q, p, epsilon,cache)
-        q_new, p_new = self.leapfrog(q, p,**args)
-        while (0.5 > acceptprob):
-            direction*=1.0
-            self.step_size*=0.5
-            epsilon={var:direction*self.step_size for var in self.start.keys()}
-            cache = {var:np.zeros_like(self.start[var]) for var in self.start.keys()}
-            q_new, p_new = self.leapfrog(q, p,**args)
-        #print
-        #print('step_size {0:.4f}, acceptance prob: {1:.2f}, direction : {2:.2f}'.format(self.step_size,acceptprob,direction))
+    def find_reasonable_epsilon(self,p_accept,**args):
+        self.t += 1
+        g=self.target_accept - p_accept
+        self.error_sum += self.target_accept - p_accept
+        #self.error_sum  = (1.0 - 1.0/(self.t + self.t0)) * self.error_sum + g/(self.t + self.t0)
+        log_step = self.mu - self.prox_center - (self.t ** 0.5) / self.gamma * self.error_sum
+        eta = self.t **(-self.kappa)
+        self.log_averaged_step = eta * log_step + (1 - eta) * self.log_averaged_step
+        return np.exp(log_step), np.exp(self.log_averaged_step)
 
     def backend_mean(self, multi_backend, niter, ncores=cpu_count()):
         aux = []
@@ -140,3 +141,40 @@ class hmc:
         mean = {var:((np.sum([r[var] for r in aux],axis=0).reshape(self.start[var].shape))/niter) for var in self.start.keys()}
         return mean
         
+
+class DualAveragingStepSize:
+    def __init__(
+        self, initial_step_size, target_accept=0.8, gamma=0.05, t0=10.0, kappa=0.75
+    ):
+        self.mu = np.log(10 * initial_step_size)
+        self.target_accept = target_accept
+        self.gamma = gamma
+        self.t = t0
+        self.kappa = kappa
+        self.error_sum = 0
+        self.log_averaged_step = 0
+
+    def update(self, p_accept):
+        """Propose a new step size.
+
+        This method returns both a stochastic step size and a dual-averaged
+        step size. While tuning, the HMC algorithm should use the stochastic
+        step size and call `update` every loop. After tuning, HMC should use
+        the dual-averaged step size for sampling.
+
+        Parameters
+        ----------
+        p_accept: float
+            The probability of the previous HMC proposal being accepted
+
+        Returns
+        -------
+        float, float
+            A stochastic step size, and a dual-averaged step size
+        """
+        self.error_sum += self.target_accept - p_accept
+        log_step = self.mu - self.error_sum / (np.sqrt(self.t) * self.gamma)
+        eta = self.t ** -self.kappa
+        self.log_averaged_step = eta * log_step + (1 - eta) * self.log_averaged_step
+        self.t += 1
+        return np.exp(log_step), np.exp(self.log_averaged_step)

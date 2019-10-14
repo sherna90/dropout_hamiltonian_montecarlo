@@ -16,7 +16,7 @@ class gaussian:
         mu=self.hyper['mu']
         x=par['x']
         grad={}
-        grad['x']=np.ceil((x - mu) / sigma**2)
+        grad['x']=(x - mu) / (sigma*sigma)
         return grad	
         
     def logp(self,par,**args):

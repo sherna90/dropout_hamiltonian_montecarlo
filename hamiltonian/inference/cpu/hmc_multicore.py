@@ -12,28 +12,28 @@ from scipy.optimize import check_grad
 import math 
 import time
 import os
-from hamiltonian.cpu.hmc import hmc
+from hamiltonian.inference.cpu.hmc import hmc
 
 def unwrap_self_hmc(arg, **kwarg):
     return hmc_multicore.sample(*arg, **kwarg)
 
 class hmc_multicore(hmc):
-    
-    def multicore_sample(self,X_train,y_train,niter=1e4,burnin=1e3,backend=None,ncores=cpu_count()):
-        if backend:
-            multi_backend = [backend+"_%i.h5" %i for i in range(ncores)]
-        else:
-            multi_backend = [backend]*ncores
-    
-        rng = [np.random.RandomState(i) for i in range(ncores)]
 
-        pool = Pool(processes=ncores)
-        results=pool.map(unwrap_self_hmc, zip([self]*ncores,[X_train]*ncores,[y_train]*ncores, [int(niter/ncores)]*ncores,[burnin]*ncores,multi_backend,rng))
+    def sample_multicore(self,niter=1e4,burnin=1e3,ncores=cpu_count(),**args):
         
-        if not backend:
-            posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return posterior,logp_samples
-        else:
-            logp_samples=np.concatenate([r[1] for r in results],axis=0)
-            return multi_backend,logp_samples
+        pool = Pool(processes=ncores)
+        
+        kwarg={'X_train':args['X_train'],'y_train':args['y_train']}
+
+        results=pool.map(unwrap_self_hmc, zip(
+                    [int(niter/ncores)]*ncores,
+                    [int(burnin)]*ncores,
+                    [np.random.RandomState(i) for i in range(ncores)],
+                    [kwarg]*ncores))
+        
+        posterior={var:np.concatenate([r[0][var] for r in results],axis=0) for var in self.start.keys()}
+        sample_positions=[r[1] for r in results]
+        sample_momentums=[r[2] for r in results]
+        logp_samples=np.concatenate([r[3] for r in results],axis=0)
+        return posterior,sample_positions,sample_momentums,logp_samples
+        
