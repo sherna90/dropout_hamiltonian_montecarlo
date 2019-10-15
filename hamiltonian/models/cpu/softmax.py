@@ -20,13 +20,16 @@ class softmax:
         return np.sum(y *  y_hat,axis=1)
 
     def log_prior(self, par,**args):
+        for k,v in args.items():
+            if k=='y_train':
+                y=v
         K=0
         for var in par.keys():
             dim=(np.array(par[var])).size
             K-=0.5*dim*np.log(2*np.pi)
             K+=0.5*dim*np.log(self.hyper['alpha'])
             K-=0.5*self.hyper['alpha']*np.sum(np.square(par[var]))
-        return K
+        return K/float(y.shape[0])
 
     def softmax(self, y_linear):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
@@ -51,10 +54,10 @@ class softmax:
         grad_w = np.dot(X.T, diff)
         grad_b = np.sum(diff, axis=0)
         grad={}
-        grad['weights']=grad_w/float(y.shape[0])
-        grad['weights']+=self.hyper['alpha']*par['weights']
-        grad['bias']=grad_b/float(y.shape[0])
-        grad['bias']+=self.hyper['alpha']*par['bias']
+        grad['weights']=grad_w+self.hyper['alpha']*par['weights']
+        grad['weights']=-1.0*grad['weights']/float(y.shape[0])
+        grad['bias']=grad_b+self.hyper['alpha']*par['bias']
+        grad['bias']=-1.0*grad['bias']/float(y.shape[0])
         return grad	
     
     def log_likelihood(self,par,**args):
@@ -65,11 +68,11 @@ class softmax:
                 y=v
         y_linear = np.dot(X, par['weights']) + par['bias']
         ll= np.sum(self.cross_entropy(y_linear,y))
-        return ll
+        return ll/float(y.shape[0])
         
     def logp(self,par,**args):
-        #return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
-        return -1.0*(self.log_likelihood(par,**args))
+        return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
+        #return -1.0*(self.log_likelihood(par,**args))
 
 
     def predict(self, par,X,prob=False):
