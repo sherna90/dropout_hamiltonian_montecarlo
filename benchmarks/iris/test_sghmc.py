@@ -29,24 +29,31 @@ K=len(classes)
 
 
 epochs = 1e4
+burnin=1e2
 eta=1e-3
 batch_size=30
-alpha=1/1000.
+alpha=1/100.
 
 start_p={'weights':np.random.random((D,K)),
         'bias':np.random.random((K))}
 hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
-sgd=inference.sghmc(model,eta=eta,epochs=epochs,gamma=0.9,batch_size=batch_size)
-par,loss=sgd.fit(start_p,X_train,y_train)
-y_pred=model.predict(par,X_test)
+sampler=inference.sghmc(model,start_p,path_length=1,step_size=eta)
+samples,loss,_,_=sampler.sample(epochs=epochs,burnin=burnin,batch_size=30,gamma=0.99,X_train=X_train,y_train=y_train)
+post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
+y_pred=model.predict(post_par,X_test)
 
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
-fig, ax = plt.subplots(figsize=(10,7))
-ax.plot(loss)
-ax.set_xlabel("Epochs")
-ax.set_ylabel("Log-loss")
+fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10,7))
+ax[0].plot(loss)
+ax[0].set_xlabel("Epochs")
+ax[0].set_ylabel("Log-loss")
+ax[1].hist(samples['bias'][:,0])
+ax[1].hist(samples['bias'][:,1])
+ax[1].hist(samples['bias'][:,2])
+ax[1].set_xlabel("Bias")
+ax[1].set_ylabel("Freq")
 plt.show()

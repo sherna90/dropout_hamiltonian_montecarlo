@@ -45,18 +45,25 @@ class hmc:
         epsilon=self.step_size
         path_length=np.ceil(2*np.random.rand()*self.path_length/epsilon)
         grad_q=self.model.grad(q,**args)
+        # half step
         for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon)*grad_q[var] 
-        for _ in np.arange(path_length):
+            p_new[var]-= (0.5*epsilon)*grad_q[var]
+        # leapfrog step 
+        for _ in np.arange(path_length-1):
+            for var in self.start.keys():
+                q_new[var]+= epsilon*p_new[var]
+                grad_q=self.model.grad(q_new,**args)
+                p_new[var]-= epsilon*grad_q[var]
+                positions.append(deepcopy(q_new)) 
+                momentums.append(deepcopy(p_new)) 
+        # half step
+        for var in self.start.keys():
             q_new[var]+= epsilon*p_new[var]
             grad_q=self.model.grad(q_new,**args)
-            p_new[var]-= epsilon*grad_q[var]
-            positions.append(deepcopy(q_new)) 
-            momentums.append(deepcopy(p_new)) 
+            p_new[var]=-(0.5*epsilon)*grad_q[var]
+        # negate momentum
         for var in self.start.keys():
-            q_new[var]+= epsilon*p_new[var]
-            grad_q=self.model.grad(q_new,**args)
-            p_new[var]=-epsilon*grad_q[var]
+            p_new[var]=-p_new[var]
         acceptprob = self.accept(q, q_new, p, p_new,**args)
         if np.isfinite(acceptprob) and (np.random.rand() < acceptprob): 
             q = q_new.copy()
@@ -65,9 +72,9 @@ class hmc:
 
 
     def accept(self,current_q, proposal_q, current_p, proposal_p,**args):
-        E_new = -1.0*(self.model.logp(proposal_q,**args)+self.potential_energy(proposal_p))
-        E_current = -1.0*(self.model.logp(current_q,**args)+self.potential_energy(current_p))
-        A = min(1,np.exp(E_new-E_current))
+        E_new = (self.model.logp(proposal_q,**args)+self.potential_energy(proposal_p))
+        E_current = (self.model.logp(current_q,**args)+self.potential_energy(current_p))
+        A = min(1,np.exp(E_current-E_new))
         return A
 
 
@@ -94,7 +101,6 @@ class hmc:
 
 
     def sample(self,niter=1e4,burnin=1e3,rng=None,**args):
-        print(niter)
         if rng == None:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
@@ -102,7 +108,10 @@ class hmc:
         for _ in tqdm(range(int(burnin))):
             q,p,positions,momentums,p_accept=self.step(q,p,rng,**args)
             #self.step_size,_=step_size_tuning.update(p_accept)
-        #_,self.step_size=step_size_tuning.update(p_accept)
+        _,avg_step_size=step_size_tuning.update(p_accept)
+        print('adapted step size : ',avg_step_size)
+        if avg_step_size>self.step_size and avg_step_size<0.5:
+            self.step_size=avg_step_size
         logp_samples=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []
         posterior={var:[] for var in self.start.keys()}
@@ -110,14 +119,14 @@ class hmc:
             q,p,positions,momentums,_=self.step(q,p,rng,**args)
             sample_positions.append(positions)
             sample_momentums.append(momentums)
-            logp_samples[i]=-1.0*self.model.logp(q,**args)
+            logp_samples[i]=self.model.logp(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
             if self.verbose and (i%(niter/10)==0):
                 print('loss: {0:.4f}'.format(logp_samples[i]))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
-        return posterior,sample_positions,sample_momentums,logp_samples
+        return posterior,logp_samples,sample_positions,sample_momentums
 
             
     def find_reasonable_epsilon(self,p_accept,**args):

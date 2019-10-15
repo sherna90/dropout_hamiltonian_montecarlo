@@ -32,7 +32,7 @@ K=len(classes)
 
 niter = 1e4
 burnin=1e3
-eta=0.1
+eta=0.01
 alpha=1/100.
 
 start_p={'weights':np.random.random((D,K)),
@@ -40,8 +40,8 @@ start_p={'weights':np.random.random((D,K)),
 hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
-hmc=sampler.hmc(model,start_p,path_length=10,step_size=eta)
-samples,positions,momentums,logp=hmc.sample(niter,burnin,None,X_train=X_train,y_train=y_train)
+hmc=sampler.hmc(model,start_p,path_length=1,step_size=eta)
+samples,loss,positions,momentums=hmc.sample(niter,burnin,None,X_train=X_train,y_train=y_train)
 
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
 y_pred=model.predict(post_par,X_test)
@@ -49,22 +49,16 @@ print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
 
 
-b_cols=columns=['b1', 'b2','b3']
-
-import pandas as pd
-b_sample = pd.DataFrame(samples['bias'], columns=b_cols)
-
-print(b_sample.describe())
-#print(w_sample.describe())
-
-import seaborn as sns
-sns.distplot(b_sample['b1'])
-sns.distplot(b_sample['b2'])
-sns.distplot(b_sample['b3'])
-#sns.pairplot(b_sample)
+fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10,7))
+ax[0].plot(loss)
+ax[0].set_xlabel("Epochs")
+ax[0].set_ylabel("Log-loss")
+ax[1].hist(samples['bias'][:,0])
+ax[1].hist(samples['bias'][:,1])
+ax[1].hist(samples['bias'][:,2])
+ax[1].set_xlabel("Bias")
+ax[1].set_ylabel("Freq")
 plt.show()
-#plt.hist(logp_samples)
-#plt.show()
 
 """ (test_pymc3.py:12470): Gtk-WARNING **: 17:42:50.400: Locale not supported by C library.
         Using the fallback 'C' locale.
