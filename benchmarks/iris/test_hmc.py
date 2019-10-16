@@ -31,8 +31,8 @@ K=len(classes)
 
 
 niter = 1e4
-burnin=1e3
-eta=0.01
+burnin=1e4
+eta=0.1
 alpha=1/100.
 
 start_p={'weights':np.random.random((D,K)),
@@ -40,8 +40,13 @@ start_p={'weights':np.random.random((D,K)),
 hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
-hmc=sampler.hmc(model,start_p,path_length=1,step_size=eta)
+hmc=sampler.hmc(model,start_p,path_length=3,step_size=eta)
 samples,loss,positions,momentums=hmc.sample(niter,burnin,None,X_train=X_train,y_train=y_train)
+
+import pandas as pd
+b_cols=[u+str(v) for u,v in zip(['b']*3,range(3))]
+b_sample=pd.DataFrame(samples['bias'],columns=b_cols)
+print(b_sample.describe())
 
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
 y_pred=model.predict(post_par,X_test)
