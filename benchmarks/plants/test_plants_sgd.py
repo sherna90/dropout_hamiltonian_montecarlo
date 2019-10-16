@@ -58,7 +58,7 @@ print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
 print("-----------------------------------------------------------")
 plants_train.close()
 plants_test.close()
-loss=pd.DataFrame(loss_sgd)
+loss=pd.DataFrame(loss)
 if use_gpu:
     loss.to_csv('loss_sgd_gpu.csv',sep=',',header=False)
     plt.figure()
