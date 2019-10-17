@@ -46,6 +46,17 @@ class sghmc(hmc):
             p = p_new.copy()
         return q,p,acceptprob
 
+    def sgld_step(self,state,momentum,rng,**args):
+        epsilon=self.step_size
+        q = state.copy()
+        p = self.draw_momentum(rng,epsilon)
+        grad_p=self.model.grad(q,**args)
+        for var in p.keys():
+            p[var]+=  - 0.5 * epsilon * grad_p[var]
+            q[var]+=p[var]
+        acceptprob=1.0
+        return q,p,acceptprob
+
     def sample(self,epochs=1,burnin=1,batch_size=1,rng=None,**args):
         if rng == None:
             rng = np.random.RandomState()
@@ -56,17 +67,26 @@ class sghmc(hmc):
         else:
             verbose=None
         epochs=int(epochs)
-        q,p=self.start,self.draw_momentum(rng)
-        for _ in tqdm(range(int(burnin))):
+        #q,p=self.start,self.draw_momentum(rng)
+        q,p=self.start,{var:np.zeros_like(self.start[var]) for var in self.start.keys()}
+        print('start burnin')
+        for i in tqdm(range(int(burnin))):
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
-                q,p,p_accept=self.step(q,p,rng,**kwargs)
+                q,p,p_accept=self.sgld_step(q,p,rng,**kwargs)
+                ll=-1.0*self.model.log_likelihood(q,**args)
+                print('loss: {0:.4f}'.format(ll))
         logp_samples=np.zeros(epochs)
         posterior={var:[] for var in self.start.keys()}
+        print('start sampling')
         for i in tqdm(range(epochs)):
+            j=0
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
+                j+=1
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
-                q,p,p_accept=self.step(q,p,rng,**kwargs)
+                q,p,p_accept=self.sgld_step(q,p,rng,**kwargs)
+                ll=-1.0*self.model.log_likelihood(q,**args)
+                print('loss: {0:.4f}'.format(ll))
             logp_samples[i]=self.model.logp(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
@@ -75,3 +95,15 @@ class sghmc(hmc):
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
         return posterior,logp_samples
+
+    def draw_momentum(self,rng,epsilon):
+        momentum={}
+        for var in self.start.keys():
+            dim=(np.array(self.start[var])).size
+            #rvar=rng.normal(0,self._inv_mass_matrix[var],dim)
+            rvar=rng.normal(0,epsilon,dim)
+            if dim>1:
+                momentum[var]=rvar.reshape(self.start[var].shape)
+            else:
+                momentum[var]=rvar
+        return momentum

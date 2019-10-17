@@ -39,7 +39,7 @@ model.add(Dense(38, activation='softmax', input_shape=(X_train.shape[1],)))
 
 model.summary()
 
-sgd = RMSprop(lr=eta, decay=1e-6, momentum=0.9, nesterov=True)
+sgd = RMSprop(lr=eta, decay=1e-6, rho=0.9)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd,
               metrics=['accuracy'])
