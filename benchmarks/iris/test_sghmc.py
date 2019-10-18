@@ -29,8 +29,8 @@ K=len(classes)
 
 
 epochs = 1e4
-burnin=1e2
-eta=1e-3
+burnin=1e3
+eta=1e-2
 batch_size=30
 alpha=1/100.
 
@@ -40,12 +40,16 @@ hyper_p={'alpha':alpha}
 
 model=base_model.softmax(hyper_p)
 sampler=inference.sghmc(model,start_p,path_length=1,step_size=eta)
-samples,loss,_,_=sampler.sample(epochs=epochs,burnin=burnin,batch_size=30,gamma=0.99,X_train=X_train,y_train=y_train)
+samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=30,gamma=0.9,X_train=X_train,y_train=y_train)
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
 y_pred=model.predict(post_par,X_test)
 
 print(classification_report(y_test.argmax(axis=1), y_pred))
 print(confusion_matrix(y_test.argmax(axis=1), y_pred))
+
+import pandas as pd
+b_data=pd.DataFrame(samples['bias'])
+print(b_data.describe())
 
 fig, ax = plt.subplots(nrows=1, ncols=2,figsize=(10,7))
 ax[0].plot(loss)

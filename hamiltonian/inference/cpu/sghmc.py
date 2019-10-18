@@ -48,7 +48,7 @@ class sghmc(hmc):
 
     def sgld_step(self,state,momentum,rng,**args):
         epsilon=self.step_size
-        q = state.copy()
+        q = deepcopy(state)
         p = self.draw_momentum(rng,epsilon)
         grad_p=self.model.grad(q,**args)
         for var in p.keys():
@@ -67,6 +67,8 @@ class sghmc(hmc):
         else:
             verbose=None
         epochs=int(epochs)
+        num_batches=np.ceil(y[:].shape[0]/float(batch_size))
+        decay_factor=self.step_size/num_batches
         #q,p=self.start,self.draw_momentum(rng)
         q,p=self.start,{var:np.zeros_like(self.start[var]) for var in self.start.keys()}
         print('start burnin')
@@ -79,14 +81,17 @@ class sghmc(hmc):
         logp_samples=np.zeros(epochs)
         posterior={var:[] for var in self.start.keys()}
         print('start sampling')
+        initial_step_size=self.step_size
         for i in tqdm(range(epochs)):
             j=0
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
-                j+=1
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p,p_accept=self.sgld_step(q,p,rng,**kwargs)
+                self.step_size=self.lr_schedule(initial_step_size,j,decay_factor,num_batches)
                 ll=-1.0*self.model.log_likelihood(q,**args)
-                print('loss: {0:.4f}'.format(ll))
+                print('loss: {0:.4f}, batch_update {1}'.format(ll,j))
+                j=j+1
+            #initial_step_size=self.step_size
             logp_samples[i]=self.model.logp(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
@@ -107,3 +112,6 @@ class sghmc(hmc):
             else:
                 momentum[var]=rvar
         return momentum
+
+    def lr_schedule(self,initial_step_size,step,decay_factor,num_batches):
+        return initial_step_size * (1.0/(1.0+step*decay_factor*num_batches))
