@@ -17,7 +17,7 @@ import hamiltonian.inference.cpu.sgd as inference
 
 eta=1e-3
 epochs=100
-batch_size=32
+batch_size=250
 alpha=1e-2
 data_path = './data/'
 
@@ -39,11 +39,20 @@ hyper_p={'alpha':alpha}
 start_time=time.time()
 model=base_model.softmax(hyper_p)
 optim=inference.sgd(model,start_p,step_size=eta)
-par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
+par,loss=optim.fit_dropout(epochs=epochs,batch_size=batch_size,p=0.5,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
 print('SGD, time:',time.time()-start_time)
 
-y_pred=model.predict(par,X_test,prob=True)
+samples=[]
+for i in range(50):
+    y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
+    samples.append(y_pred)
 
+df_list=[pd.DataFrame(p) for p in samples]
+with pd.ExcelWriter('output.xlsx') as writer:
+    for i,df in enumerate(df_list):
+        df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
+
+y_pred=np.median(samples,axis=0)
 cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
 print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
 print("-----------------------------------------------------------")
