@@ -89,7 +89,7 @@ class sghmc(hmc):
                 q,p,p_accept=self.sgld_step(q,p,rng,**kwargs)
                 self.step_size=self.lr_schedule(initial_step_size,j,decay_factor,num_batches)
                 ll=-1.0*self.model.log_likelihood(q,**args)
-                print('loss: {0:.4f}, batch_update {1}'.format(ll,j))
+                print('epoch {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
             #initial_step_size=self.step_size
             logp_samples[i]=self.model.logp(q,**args)
@@ -105,12 +105,7 @@ class sghmc(hmc):
         momentum={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            #rvar=rng.normal(0,self._inv_mass_matrix[var],dim)
-            rvar=rng.normal(0,epsilon,dim)
-            if dim>1:
-                momentum[var]=rvar.reshape(self.start[var].shape)
-            else:
-                momentum[var]=rvar
+            momentum[var]=rng.normal(0,epsilon,size=self.start[var].shape)
         return momentum
 
     def lr_schedule(self,initial_step_size,step,decay_factor,num_batches):
