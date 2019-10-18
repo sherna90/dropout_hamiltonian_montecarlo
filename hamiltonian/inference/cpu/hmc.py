@@ -91,12 +91,7 @@ class hmc:
         momentum={}
         for var in self.start.keys():
             dim=(np.array(self.start[var])).size
-            #rvar=rng.normal(0,self._inv_mass_matrix[var],dim)
-            rvar=rng.normal(0,1,dim)
-            if dim>1:
-                momentum[var]=rvar.reshape(self.start[var].shape)
-            else:
-                momentum[var]=rvar
+            momentum[var]=rng.normal(0,1,size=self.start[var].shape)
         return momentum
 
 
