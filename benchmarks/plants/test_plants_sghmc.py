@@ -40,7 +40,7 @@ hyper_p={'alpha':alpha}
 start_time=time.time()
 model=base_model.softmax(hyper_p)
 sampler=inference.sghmc(model,start_p,path_length=eta,step_size=eta)
-samples,loss,_,_=sampler.sample(epochs=epochs,burnin=1,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
+samples,loss=sampler.sample(epochs=epochs,burnin=1,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
 y_pred=model.predict(post_par,X_test)
 print('SGHMC, time:',time.time()-start_time)
