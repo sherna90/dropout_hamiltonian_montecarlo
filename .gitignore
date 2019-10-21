@@ -2,6 +2,11 @@ data
 data/*
 env
 env/*
+results/
+results/*
 *.h5
 *.pkl
 *.pyc
+*.pkl
+*.xlsx
+*.tar.gz
