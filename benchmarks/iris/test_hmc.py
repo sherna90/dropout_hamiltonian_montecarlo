@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.softmax as base_model
-import hamiltonian.inference.cpu.hmc as sampler
+import hamiltonian.models.gpu.softmax as base_model
+import hamiltonian.inference.gpu.hmc as sampler
 
 from importlib import reload
 
@@ -31,7 +31,7 @@ K=len(classes)
 
 
 niter = 1e4
-burnin=1e4
+burnin=1e3
 eta=0.1
 alpha=1/100.
 

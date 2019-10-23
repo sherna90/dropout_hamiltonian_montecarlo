@@ -72,8 +72,8 @@ class hmc:
 
 
     def accept(self,current_q, proposal_q, current_p, proposal_p,**args):
-        E_new = (self.model.logp(proposal_q,**args)+self.potential_energy(proposal_p))
-        E_current = (self.model.logp(current_q,**args)+self.potential_energy(current_p))
+        E_new = (self.model.negative_log_posterior(proposal_q,**args)+self.potential_energy(proposal_p))
+        E_current = (self.model.negative_log_posterior(current_q,**args)+self.potential_energy(current_p))
         A = min(1,np.exp(E_current-E_new))
         return A
 
@@ -107,21 +107,21 @@ class hmc:
         print('adapted step size : ',avg_step_size)
         if avg_step_size>self.step_size and avg_step_size<0.5:
             self.step_size=avg_step_size
-        logp_samples=np.zeros(int(niter))
+        loss=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []
         posterior={var:[] for var in self.start.keys()}
         for i in tqdm(range(int(niter))):
             q,p,positions,momentums,_=self.step(q,p,rng,**args)
             sample_positions.append(positions)
             sample_momentums.append(momentums)
-            logp_samples[i]=self.model.logp(q,**args)
+            loss[i]=self.model.negative_log_posterior(q,**args)
             for var in self.start.keys():
                 posterior[var].append(q[var])
             if self.verbose and (i%(niter/10)==0):
-                print('loss: {0:.4f}'.format(logp_samples[i]))
+                print('loss: {0:.4f}'.format(loss[i]))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
-        return posterior,logp_samples,sample_positions,sample_momentums
+        return posterior,loss,sample_positions,sample_momentums
 
             
     def find_reasonable_epsilon(self,p_accept,**args):
