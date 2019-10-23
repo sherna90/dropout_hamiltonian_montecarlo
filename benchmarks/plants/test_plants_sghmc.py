@@ -11,14 +11,14 @@ import h5py
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.softmax as base_model
-import hamiltonian.inference.cpu.sghmc as inference
+import hamiltonian.models.gpu.softmax as base_model
+import hamiltonian.inference.gpu.sgld as inference
 import pickle
 
-eta=1e-2
+eta=1e-1
 epochs=100
-burnin=1
-batch_size=250
+burnin=10
+batch_size=30
 alpha=1e-2
 data_path = './data/'
 
@@ -39,10 +39,10 @@ hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=base_model.softmax(hyper_p)
-sampler=inference.sghmc(model,start_p,path_length=eta,step_size=eta)
-samples,loss=sampler.sample(epochs=epochs,burnin=1,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
+sampler=inference.sgld(model,start_p,path_length=eta,step_size=eta)
+samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
 post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
-y_pred=model.predict(post_par,X_test)
+y_pred=model.predict(post_par,X_test,prob=True)
 print('SGHMC, time:',time.time()-start_time)
 
 with open('sgld_model.pkl','wb') as handler:
@@ -52,15 +52,18 @@ with open('sgld_model.pkl','wb') as handler:
 with open('sgld_loss.pkl','wb') as handler:
     pickle.dump(loss,handler)
 
+predict_samples=[]
+for i in range(epochs):
+    par={var:samples[var][i] for var in samples.keys()}
+    y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
+    predict_samples.append(y_pred)
 
-cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
+df_list=[pd.DataFrame(p) for p in predict_samples]
+with pd.ExcelWriter('output.xlsx') as writer:
+    for i,df in enumerate(df_list):
+        df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
+
 print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
 print("-----------------------------------------------------------")
 plants_train.close()
 plants_test.close()
-loss=pd.DataFrame(loss)
-loss.to_csv('loss_sgd_cpu.csv',sep=',',header=False)
-plt.figure()
-plot_confusion_matrix(cnf_matrix_sgd, classes=np.int32(K),title='SGD CPU')
-plt.savefig('plants_confusion_matrix_sgd_cpu.pdf',bbox_inches='tight')
-plt.close()

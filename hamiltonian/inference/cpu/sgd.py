@@ -55,12 +55,10 @@ class sgd:
         loss_val=np.zeros(epochs)
         par=deepcopy(self.start)
         momentum={var:np.zeros_like(par[var]) for var in par.keys()}
-        momentum={var:np.zeros_like(par[var]) for var in par.keys()}
         for i in tqdm(range(epochs)):
             for X_batch, y_batch in self.iterate_minibatches(X, y,batch_size):
                 n_batch=np.float(y_batch.shape[0])
-                n_x,n_y=X_batch.shape
-                Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
+                Z=np.random.binomial(1,p,size=X_batch.shape)
                 X_batch_dropout=np.multiply(X_batch,Z)
                 grad_p=self.model.grad(par,X_train=X_batch_dropout,y_train=y_batch)
                 for var in par.keys():

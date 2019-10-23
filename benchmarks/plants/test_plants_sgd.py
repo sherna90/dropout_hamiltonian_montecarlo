@@ -11,8 +11,8 @@ import h5py
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.softmax as base_model
-import hamiltonian.inference.cpu.sgd as inference
+import hamiltonian.models.gpu.softmax as base_model
+import hamiltonian.inference.gpu.sgd as inference
 
 
 eta=1e-3
@@ -21,12 +21,15 @@ batch_size=32
 alpha=1e-2
 data_path = './data/'
 
-plants_train=h5py.File(data_path+'plant_village_train.hdf5','r')
-X_train=plants_train['features']
-y_train=plants_train['labels']
-plants_test=h5py.File(data_path+'plant_village_val.hdf5','r')
-X_test=plants_test['features']
-y_test=plants_test['labels']
+train_file='train_features_labels.h5'
+test_file='validation_features_labels.h5'
+
+plants_train=h5py.File(data_path+train_file,'r')
+X_train=plants_train['train_features']
+y_train=plants_train['train_labels']
+plants_test=h5py.File(data_path+test_file,'r')
+X_test=plants_test['validation_features']
+y_test=plants_test['validation_labels']
 
 D=X_train.shape[1]
 K=y_train.shape[1]
@@ -42,7 +45,7 @@ optim=inference.sgd(model,start_p,step_size=eta)
 par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
 print('SGD, time:',time.time()-start_time)
 
-y_pred=model.predict(par,X_test,prob=True)
+y_pred=model.predict(par,X_test[:],prob=True)
 
 cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
 print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))

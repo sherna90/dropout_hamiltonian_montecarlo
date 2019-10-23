@@ -70,23 +70,23 @@ class softmax:
         ll= np.sum(self.cross_entropy(y_linear,y))
         return ll/float(y.shape[0])
         
-    def logp(self,par,**args):
+    def negative_log_posterior(self,par,**args):
         return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
         #return -1.0*(self.log_likelihood(par,**args))
 
 
     def predict(self, par,X,prob=False):
-        yhat=self.net(par,X)
-        pred=yhat.argmax(axis=1)
+        yhat=self.net(par,X)   
         if prob:
             out=yhat
         else:
+            pred=yhat.argmax(axis=1)
             out=pred
         return out	
 
     def predict_stochastic(self,par,X,prob=False,p=0.5):
         n_x,n_y=X.shape
-        Z=np.random.binomial(1,p,n_x*n_y).reshape((n_x,n_y))
+        Z=np.random.binomial(1,p,size=X.shape)
         X_t=np.multiply(X,Z)   
         yhat=self.net(par,X_t)
         if prob:
