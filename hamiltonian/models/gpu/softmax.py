@@ -92,17 +92,21 @@ class softmax:
         return cp.asnumpy(out)	
 
 
-    def predict_stochastic(self,par,X,prob=False,p=0.5):
+    def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=32):
         par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
-        X_gpu = cp.asarray(X)
-        Z=cp.random.binomial(1,p,size=X_gpu.shape)
-        X_t=cp.multiply(X_gpu,Z)   
-        yhat=self.net(par_gpu,X_t)
-        if prob:
-            out=yhat
-        else:
-            out=yhat.argmax(axis=1)
-        return cp.asnumpy(out)	
+        results=[]
+        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
+            excerpt = slice(start_idx, start_idx + batchsize)
+            X_gpu=cp.asarray(X[excerpt])  
+            Z=cp.random.binomial(1,p,size=X_gpu.shape)
+            X_t=cp.multiply(X_gpu,Z)   
+            yhat=self.net(par_gpu,X_t)
+            if prob:
+                out=yhat
+            else:
+                out=yhat.argmax(axis=1)
+            results.append(cp.asnumpy(out))
+        return np.asarray(results)	
 
 
     
