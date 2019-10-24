@@ -58,7 +58,7 @@ loss.to_csv('loss_sgld.csv',sep=',',header=False)
 predict_samples=[]
 for i in range(epochs):
     par={var:samples[var][i] for var in samples.keys()}
-    y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
+    y_pred=model.predict(par,X_test,prob=True)
     predict_samples.append(y_pred)
 
 df_list=[pd.DataFrame(p) for p in predict_samples]

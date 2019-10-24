@@ -47,6 +47,7 @@ print('SGD, time:',time.time()-start_time)
 
 predict_samples=[]
 for i in range(100):
+    print('prediction : {0}'.format(i))
     y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
     predict_samples.append(y_pred)
 
