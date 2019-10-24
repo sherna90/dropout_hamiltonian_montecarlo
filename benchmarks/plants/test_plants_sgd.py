@@ -21,15 +21,15 @@ batch_size=32
 alpha=1e-2
 data_path = './data/'
 
-train_file='train_features_labels.h5'
-test_file='validation_features_labels.h5'
+train_file='plant_village_train.hdf5'
+test_file='plant_village_val.hdf5'
 
 plants_train=h5py.File(data_path+train_file,'r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
+X_train=plants_train['features']
+y_train=plants_train['labels']
 plants_test=h5py.File(data_path+test_file,'r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
+X_test=plants_test['features']
+y_test=plants_test['labels']
 
 D=X_train.shape[1]
 K=y_train.shape[1]

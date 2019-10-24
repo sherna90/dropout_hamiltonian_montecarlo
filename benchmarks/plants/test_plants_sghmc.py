@@ -22,12 +22,15 @@ batch_size=30
 alpha=1e-2
 data_path = './data/'
 
-plants_train=h5py.File(data_path+'train_features_labels.h5','r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
-plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
+train_file='plant_village_train.hdf5'
+test_file='plant_village_val.hdf5'
+
+plants_train=h5py.File(data_path+train_file,'r')
+X_train=plants_train['features']
+y_train=plants_train['labels']
+plants_test=h5py.File(data_path+test_file,'r')
+X_test=plants_test['features']
+y_test=plants_test['labels']
 
 D=X_train.shape[1]
 K=y_train.shape[1]
@@ -49,8 +52,8 @@ with open('sgld_model.pkl','wb') as handler:
     pickle.dump(samples,handler)
 
 
-with open('sgld_loss.pkl','wb') as handler:
-    pickle.dump(loss,handler)
+loss=pd.DataFrame(loss)
+loss.to_csv('loss_sgld.csv',sep=',',header=False)
 
 predict_samples=[]
 for i in range(epochs):
@@ -59,7 +62,7 @@ for i in range(epochs):
     predict_samples.append(y_pred)
 
 df_list=[pd.DataFrame(p) for p in predict_samples]
-with pd.ExcelWriter('output.xlsx') as writer:
+with pd.ExcelWriter('sgmcmc_output.xlsx') as writer:
     for i,df in enumerate(df_list):
         df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
 

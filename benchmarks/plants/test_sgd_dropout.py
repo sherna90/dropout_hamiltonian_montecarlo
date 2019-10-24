@@ -21,15 +21,15 @@ batch_size=250
 alpha=1e-2
 data_path = './data/'
 
-train_file='train_features_labels.h5'
-test_file='validation_features_labels.h5'
+train_file='plant_village_train.hdf5'
+test_file='plant_village_val.hdf5'
 
 plants_train=h5py.File(data_path+train_file,'r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
+X_train=plants_train['features']
+y_train=plants_train['labels']
 plants_test=h5py.File(data_path+test_file,'r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
+X_test=plants_test['features']
+y_test=plants_test['labels']
 
 D=X_train.shape[1]
 K=y_train.shape[1]
@@ -50,8 +50,11 @@ for i in range(100):
     y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
     predict_samples.append(y_pred)
 
+with open('mcdropout_model_05.pkl','wb') as handler:
+    pickle.dump(samples,handler)
+
 df_list=[pd.DataFrame(p) for p in predict_samples]
-with pd.ExcelWriter('output.xlsx') as writer:
+with pd.ExcelWriter('mcdropout_output_05.xlsx') as writer:
     for i,df in enumerate(df_list):
         df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
 
@@ -62,7 +65,7 @@ print("-----------------------------------------------------------")
 plants_train.close()
 plants_test.close()
 loss=pd.DataFrame(loss)
-loss.to_csv('loss_sgd_cpu.csv',sep=',',header=False)
+loss.to_csv('loss_mcdropout_05.csv',sep=',',header=False)
 plt.figure()
 plt.plot(loss)
 plt.close()
