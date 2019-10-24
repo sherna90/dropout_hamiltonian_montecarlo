@@ -81,15 +81,19 @@ class softmax:
         return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
     
 
-    def predict(self, par,X,prob=False):
+    def predict(self, par,X,prob=False,batchsize=32):
         par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
-        X_gpu = cp.asarray(X)
-        yhat=self.net(par_gpu,X_gpu)
-        if prob:
-            out=yhat
-        else:
-            out=yhat.argmax(axis=1)
-        return cp.asnumpy(out)	
+        results=[]
+        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
+            excerpt = slice(start_idx, start_idx + batchsize)
+            X_gpu=cp.asarray(X[excerpt])  
+            yhat=self.net(par_gpu,X_gpu)
+            if prob:
+                out=yhat
+            else:
+                out=yhat.argmax(axis=1)
+            results.append(cp.asnumpy(out))
+        return np.asarray(results)	
 
 
     def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=32):
