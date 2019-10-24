@@ -20,12 +20,15 @@ data_path = 'data/'
 
 
 # Read in the data
-plants_train=h5py.File(data_path+'train_features_labels.h5','r')
-X_train=plants_train['train_features']
-y_train=plants_train['train_labels']
-plants_test=h5py.File(data_path+'validation_features_labels.h5','r')
-X_test=plants_test['validation_features']
-y_test=plants_test['validation_labels']
+train_file='plant_village_train.hdf5'
+test_file='plant_village_val.hdf5'
+
+plants_train=h5py.File(data_path+train_file,'r')
+X_train=plants_train['features']
+y_train=plants_train['labels']
+plants_test=h5py.File(data_path+test_file,'r')
+X_test=plants_test['features']
+y_test=plants_test['labels']
 
 print(X_train.shape[0], 'train samples')
 print(X_test.shape[0], 'test samples')
