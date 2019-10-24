@@ -41,32 +41,36 @@ hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=base_model.softmax(hyper_p)
-optim=inference.sgd(model,start_p,step_size=eta)
-par,loss=optim.fit_dropout(epochs=epochs,batch_size=batch_size,p=0.5,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
-print('SGD, time:',time.time()-start_time)
 
-predict_samples=[]
-for i in range(100):
-    print('prediction : {0}'.format(i))
-    y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
-    predict_samples.append(y_pred)
+def train_model():
+    optim=inference.sgd(model,start_p,step_size=eta)
+    par,loss=optim.fit_dropout(epochs=epochs,batch_size=batch_size,p=0.5,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
+    print('SGD, time:',time.time()-start_time)
+    loss=pd.DataFrame(loss)
+    loss.to_csv('loss.csv',sep=',',header=False)
+    import pickle
+    with open('model.pkl','wb') as handler:
+        pickle.dump(par,handler)
 
-with open('mcdropout_model_05.pkl','wb') as handler:
-    pickle.dump(samples,handler)
+def test_model():
+    with open('model.pkl','rb') as handler:
+        par=pickle.load(handler)
+    predict_samples=[]
+    for i in range(epochs):
+        print('prediction : {0}'.format(i))
+        y_pred=model.predict_stochastic(par,X_test,p=0.5,prob=True)
+        y_pred=y_pred.reshape(-1, y_pred.shape[-1])
+        predict_samples.append(y_pred)
+    with h5py.File('output.hdf5', 'w') as f:
+        f.create_dataset('predict_samples', data=np.asarray(predict_samples)) 
+    y_pred=np.median(predict_samples,axis=0)
+    cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
+    print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
+    print("-----------------------------------------------------------")
 
-df_list=[pd.DataFrame(p) for p in predict_samples]
-with pd.ExcelWriter('mcdropout_output_05.xlsx') as writer:
-    for i,df in enumerate(df_list):
-        df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
 
-y_pred=np.median(predict_samples,axis=0)
-cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
-print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
-print("-----------------------------------------------------------")
+#train_model()
+test_model()
+
 plants_train.close()
 plants_test.close()
-loss=pd.DataFrame(loss)
-loss.to_csv('loss_mcdropout_05.csv',sep=',',header=False)
-plt.figure()
-plt.plot(loss)
-plt.close()

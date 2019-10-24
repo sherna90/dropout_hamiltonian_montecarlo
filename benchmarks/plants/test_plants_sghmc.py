@@ -15,7 +15,7 @@ import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgld as inference
 import pickle
 
-eta=1e-1
+eta=1e-3
 epochs=100
 burnin=10
 batch_size=30
@@ -42,31 +42,36 @@ hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=base_model.softmax(hyper_p)
-sampler=inference.sgld(model,start_p,path_length=eta,step_size=eta)
-samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
-post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
-y_pred=model.predict(post_par,X_test,prob=True)
-print('SGHMC, time:',time.time()-start_time)
 
-with open('sgld_model.pkl','wb') as handler:
-    pickle.dump(samples,handler)
+def train_model():
+    sampler=inference.sgld(model,start_p,path_length=eta,step_size=eta)
+    samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
+    post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
+    y_pred=model.predict(post_par,X_test,prob=True)
+    print('SGHMC, time:',time.time()-start_time)
+    loss=pd.DataFrame(loss)
+    loss.to_csv('loss.csv',sep=',',header=False)
+    with open('model.pkl','wb') as handler:
+        pickle.dump(samples,handler)
+
+def test_model():
+    with open('model.pkl','rb') as handler:
+        samples=pickle.load(handler)
+    predict_samples=[]
+    for i in range(epochs):
+        print('prediction : {0}'.format(i))
+        par={var:samples[var][i] for var in samples.keys()}
+        y_pred=model.predict(par,X_test,prob=True)
+        y_pred=y_pred.reshape(-1, y_pred.shape[-1])
+        predict_samples.append(y_pred)
+    with h5py.File('output.hdf5', 'w') as f:
+        f["predict_samples"] = np.asarray(predict_samples)
+    print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
+    print("-----------------------------------------------------------")
 
 
-loss=pd.DataFrame(loss)
-loss.to_csv('loss_sgld.csv',sep=',',header=False)
+#train_model()
+test_model()
 
-predict_samples=[]
-for i in range(epochs):
-    par={var:samples[var][i] for var in samples.keys()}
-    y_pred=model.predict(par,X_test,prob=True)
-    predict_samples.append(y_pred)
-
-df_list=[pd.DataFrame(p) for p in predict_samples]
-with pd.ExcelWriter('sgmcmc_output.xlsx') as writer:
-    for i,df in enumerate(df_list):
-        df.to_excel(writer, engine='xlsxwriter',sheet_name='sample_{}'.format(i))
-
-print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
-print("-----------------------------------------------------------")
 plants_train.close()
 plants_test.close()

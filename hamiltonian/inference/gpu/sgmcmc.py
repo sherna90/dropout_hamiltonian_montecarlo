@@ -57,7 +57,7 @@ class sgmcmc:
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p=self.step(q,p,rng,**kwargs)
-                if (j % 10)==0:
+                if (j % 100)==0:
                     ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
                     print('burnin {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
@@ -71,7 +71,7 @@ class sgmcmc:
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p=self.step(q,p,rng,**kwargs)
                 self.step_size=self.lr_schedule(initial_step_size,j,decay_factor,num_batches)
-                if (j % (num_batches/10))==0:
+                if (j % 100 )==0:
                     ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
                     print('epoch {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
