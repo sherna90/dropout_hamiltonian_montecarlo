@@ -64,8 +64,10 @@ def test_model():
         y_pred=model.predict(par,X_test,prob=True)
         y_pred=y_pred.reshape(-1, y_pred.shape[-1])
         predict_samples.append(y_pred)
+    predict_samples=np.asarray(predict_samples)
     with h5py.File('output.hdf5', 'w') as f:
-        f["predict_samples"] = np.asarray(predict_samples)
+        f["predict_samples"] = predict_samples
+    y_pred=np.median(predict_samples,axis=0)
     print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
     print("-----------------------------------------------------------")
 

@@ -47,7 +47,6 @@ def train_model():
         par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
         print('SGD, time:',time.time()-start_time)
         loss=pd.DataFrame(loss)
-        loss.to_csv('loss.csv',sep=',',header=False)
         with open('model.pkl','wb') as handler:
                 pickle.dump(par,handler)
 
