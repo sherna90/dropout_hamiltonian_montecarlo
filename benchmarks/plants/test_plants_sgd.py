@@ -13,9 +13,9 @@ sys.path.append('./')
 import hamiltonian.utils as utils
 import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgd as inference
+import pickle
 
-
-eta=1e-3
+eta=1e-2
 epochs=100
 batch_size=32
 alpha=1e-2
@@ -41,18 +41,26 @@ hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=base_model.softmax(hyper_p)
-optim=inference.sgd(model,start_p,step_size=eta)
-par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
-print('SGD, time:',time.time()-start_time)
 
-y_pred=model.predict(par,X_test[:],prob=True)
+def train_model():
+        optim=inference.sgd(model,start_p,step_size=eta)
+        par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
+        print('SGD, time:',time.time()-start_time)
+        loss=pd.DataFrame(loss)
+        loss.to_csv('loss.csv',sep=',',header=False)
+        with open('model.pkl','wb') as handler:
+                pickle.dump(par,handler)
 
-cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred.argmax(axis=1))
-print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
-print("-----------------------------------------------------------")
+def test_model():
+        with open('model.pkl','rb') as handler:
+                par=pickle.load(handler)
+        y_pred=model.predict(par,X_test[:],prob=True)
+        y_pred=y_pred.reshape(-1, y_pred.shape[-1])
+        print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
+        print("-----------------------------------------------------------")
+
+train_model()
+test_model()
+
 plants_train.close()
 plants_test.close()
-loss=pd.DataFrame(loss)
-loss.to_csv('loss_sgd_cpu.csv',sep=',',header=False)
-plt.figure()
-plt.close()

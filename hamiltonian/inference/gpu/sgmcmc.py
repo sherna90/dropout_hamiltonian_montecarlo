@@ -48,8 +48,6 @@ class sgmcmc:
             verbose=None
         epochs=int(epochs)
         num_batches=cp.ceil(y[:].shape[0]/float(batch_size))
-        decay_factor=self.step_size/num_batches
-        #q,p=self.start,self.draw_momentum(rng)
         q,p=self.start,{var:cp.zeros_like(self.start[var]) for var in self.start.keys()}
         print('start burnin')
         for i in tqdm(range(int(burnin))):
@@ -70,7 +68,7 @@ class sgmcmc:
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p=self.step(q,p,rng,**kwargs)
-                self.step_size=self.lr_schedule(initial_step_size,j,decay_factor,num_batches)
+                self.step_size=self.lr_schedule(initial_step_size,j,num_batches)
                 if (j % 100 )==0:
                     ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
                     print('epoch {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
@@ -80,11 +78,10 @@ class sgmcmc:
             logp_samples[i]=ll
             for var in self.start.keys():
                 posterior[var].append(cp.asnumpy(q[var]))
-            if self.verbose and (i%(epochs/10)==0):
-                print('loss: {0}'.format(ll))
         for var in self.start.keys():
             posterior[var]=np.array(posterior[var])
         return posterior,logp_samples
 
-    def lr_schedule(self,initial_step_size,step,decay_factor,num_batches):
+    def lr_schedule(self,initial_step_size,step,num_batches):
+        decay_factor=initial_step_size/num_batches
         return initial_step_size * (1.0/(1.0+step*decay_factor*num_batches))
