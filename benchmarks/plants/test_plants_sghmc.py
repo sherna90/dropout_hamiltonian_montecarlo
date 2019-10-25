@@ -15,10 +15,10 @@ import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgld as inference
 import pickle
 
-eta=1e-3
+eta=1e-2
 epochs=100
-burnin=10
-batch_size=30
+burnin=100
+batch_size=32
 alpha=1e-2
 data_path = './data/'
 
@@ -70,7 +70,7 @@ def test_model():
     print("-----------------------------------------------------------")
 
 
-#train_model()
+train_model()
 test_model()
 
 plants_train.close()

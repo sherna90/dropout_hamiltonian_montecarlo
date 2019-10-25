@@ -13,11 +13,11 @@ sys.path.append('./')
 import hamiltonian.utils as utils
 import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgd as inference
-
+import pickle
 
 eta=1e-3
 epochs=100
-batch_size=250
+batch_size=32
 alpha=1e-2
 data_path = './data/'
 
@@ -69,7 +69,7 @@ def test_model():
     print("-----------------------------------------------------------")
 
 
-#train_model()
+train_model()
 test_model()
 
 plants_train.close()
