@@ -11,48 +11,47 @@ from tqdm import tqdm
 import time
 
 class logistic:
-    def __init__(self):
-        pass
+    
+    def __init__(self,_hyper):
+        self.hyper={var:cp.asarray(_hyper[var]) for var in _hyper.keys()}
 
-    def sgd(self,X, y, par,hyper, eta=1e-2,epochs=1e2,batch_size=20,verbose=True):
-        par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
+    def log_prior(self, par,**args):
+        for k,v in args.items():
+            if k=='y_train':
+                y=v
+        K=0
+        for var in par.keys():
+            dim=(cp.asarray(par[var])).size
+            K-=0.5*dim*cp.log(2*np.pi)
+            K+=0.5*dim*cp.log(self.hyper['alpha'])
+            K-=0.5*self.hyper['alpha']*cp.sum(cp.square(par[var]))
+        return K
+    
 
-        loss_val = cp.zeros(cp.int(epochs))
-        momemtum={var:cp.zeros_like(par_gpu[var]) for var in par_gpu.keys()}
-        gamma=0.9
-        for i in tqdm(range(np.int(epochs))):
-            for batch in self.iterate_minibatches(X, y, batch_size):
-                X_batch, y_batch = batch
-                grad_p_gpu = self.grad(X_batch,y_batch,par_gpu,hyper)
-                for var in par_gpu.keys():
-                    momemtum[var] = gamma * momemtum[var] + eta * grad_p_gpu[var]/y_batch.shape[0]
-                    par_gpu[var]+=momemtum[var]
-            #loss_val[i]=-self.loss(X_batch,y_batch,par,hyper)/float(batch_size)
-            if verbose and (i%(epochs/10)==0):
-                pass
-                #print('iteration {} , loss: {}'.format(i,loss_val[i]))
-        return par_gpu, loss_val
-
-    def iterate_minibatches(self,X, y, batchsize):
-        assert X.shape[0] == y.shape[0]
-        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
-            excerpt = slice(start_idx, start_idx + batchsize)
-            yield cp.asarray(X[excerpt]), cp.asarray(y[excerpt])
-
-
-    def grad(self, X,y,par,hyper):
-        yhat=self.net(X, par)
+    def grad(self, par,**args):
+        for k,v in args.items():
+            if k=='X_train':
+                X=cp.asarray(v)
+            elif k=='y_train':
+                y=cp.asarray(v)
+        yhat=self.net(par,X)
         diff = y-yhat
+        #diff=diff[:,:-1]
         grad_w = cp.dot(X.T, diff)
         grad_b = cp.sum(diff, axis=0)
         grad={}
-        grad['weights']=grad_w
-        grad['weights']+=hyper['alpha']*par['weights']
-        grad['bias']=grad_b
-        grad['bias']+=hyper['alpha']*par['bias']
+        grad['weights']=grad_w+self.hyper['alpha']*par['weights']
+        grad['weights']=-1.0*grad['weights']/float(y.shape[0])
+        grad['bias']=grad_b+self.hyper['alpha']*par['bias']
+        grad['bias']=-1.0*grad['bias']/float(y.shape[0])
         return grad	
 
-    def net(self, X,par):
+    def net(self,par,**args):
+        for k,v in args.items():
+            if k=='X_train':
+                X=cp.asarray(v)
+            elif k=='y_train':
+                y=cp.asarray(v)
         y_linear = cp.dot(X, par['weights']) + par['bias']
         yhat = self.sigmoid(y_linear)
         return yhat
@@ -61,18 +60,18 @@ class logistic:
         norms=(1.0 + cp.exp(-y_linear))
         return 1.0 / norms
 
-    def loss(self, X, y, par,hyper):
-        return self.log_likelihood(X, y, par,hyper)
+    def loss(self, par,**args ):
+        return self.log_likelihood(par,**args)
 
-    def log_likelihood(self, X, y, par,hyper):
+    def log_likelihood(self, par,**args):
+        for k,v in args.items():
+            if k=='X_train':
+                X=cp.asarray(v)
+            elif k=='y_train':
+                y=cp.asarray(v)
         y_linear = cp.dot(X, par['weights']) + par['bias']
-        ll= cp.sum(self.cross_entropy(y_linear, y))
+        ll= cp.sum()
         return ll
-
-    def cross_entropy(self, y_linear, y):
-        aux1 = cp.exp(y_linear)
-        var = -cp.log(1.0 + aux1)
-        return -cp.log(1.0 + cp.exp(y_linear)) + y*y_linear
 
     def predict(self, X, par):
         X_gpu = cp.asarray(X)
@@ -80,25 +79,3 @@ class logistic:
         pred = 1 * cp.array( yhat > 0.5)
         return cp.asnumpy(pred)
 
-    def log_prior(self, par,hyper):
-        logpdf=lambda z,alpha,k : -0.5*cp.sum(alpha*cp.square(z))-0.5*k*cp.log(1./alpha)-0.5*k*cp.log(2*cp.pi)
-        par_dims={var:cp.array(par[var]).size for var in par.keys()}
-        log_prior=[logpdf(par[var],hyper['alpha'],par_dims[var]) for var in par.keys()]
-        return cp.sum(log_prior)
-
-    def check_gradient(self, X, y, par,hyper,dh=0.00001):
-        grad_a=grad(X,y,par,hyper)
-        x_plus=deepcopy(par)
-        x_minus=deepcopy(par)
-        diff={}
-        grad_f={}
-        for var in par.keys():
-            x_plus[var]+=dh
-            x_minus[var]-=dh
-            f_plus=loss(X,y,x_plus,hyper)
-            f_minus=loss(X,y,x_minus,hyper)
-            x_plus[var]=par[var]
-            x_minus[var]=par[var]
-            grad_f[var]=(f_plus-f_minus)/(2.0*dh) 
-            diff[var]=norm(grad_f[var]-cp.sum(grad_a[var]))
-        return grad_f   
