@@ -47,15 +47,17 @@ class sgmcmc:
         else:
             verbose=None
         epochs=int(epochs)
+        n_data=X.shape[0]
         num_batches=cp.ceil(y[:].shape[0]/float(batch_size))
         q,p=self.start,{var:cp.zeros_like(self.start[var]) for var in self.start.keys()}
         print('start burnin')
         for i in tqdm(range(int(burnin))):
             j=0
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
-                kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
+                n_batch=X_batch.shape[0]
+                kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose,'n_data':n_data,'n_batch':n_batch}
                 q,p=self.step(q,p,rng,**kwargs)
-                if (j % 100)==0:
+                if (j % 1000)==0:
                     ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
                     print('burnin {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
@@ -66,10 +68,11 @@ class sgmcmc:
         for i in tqdm(range(epochs)):
             j=0
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
-                kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
+                n_batch=X_batch.shape[0]
+                kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose,'n_data':n_data,'n_batch':n_batch}
                 q,p=self.step(q,p,rng,**kwargs)
                 self.step_size=self.lr_schedule(initial_step_size,j,num_batches)
-                if (j % 100 )==0:
+                if (j % 1000 )==0:
                     ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
                     print('epoch {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1

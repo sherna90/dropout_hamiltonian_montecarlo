@@ -15,9 +15,9 @@ import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgld as inference
 import pickle
 
-eta=1e-2
-epochs=100
-burnin=100
+eta=1e-1
+epochs=1e3
+burnin=1
 batch_size=32
 alpha=1e-2
 data_path = './data/'
@@ -45,7 +45,7 @@ model=base_model.softmax(hyper_p)
 
 def train_model():
     sampler=inference.sgld(model,start_p,path_length=eta,step_size=eta)
-    samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=True)
+    samples,loss=sampler.sample(epochs=epochs,burnin=burnin,batch_size=batch_size,X_train=X_train,y_train=y_train,verbose=False)
     post_par={var:np.median(samples[var],axis=0) for var in samples.keys()}
     y_pred=model.predict(post_par,X_test,prob=True)
     print('SGHMC, time:',time.time()-start_time)
@@ -58,7 +58,7 @@ def test_model():
     with open('model.pkl','rb') as handler:
         samples=pickle.load(handler)
     predict_samples=[]
-    for i in range(epochs):
+    for i in range(int(epochs)):
         print('prediction : {0}'.format(i))
         par={var:samples[var][i] for var in samples.keys()}
         y_pred=model.predict(par,X_test,prob=True)
@@ -67,12 +67,12 @@ def test_model():
     predict_samples=np.asarray(predict_samples)
     with h5py.File('output.hdf5', 'w') as f:
         f["predict_samples"] = predict_samples
-    y_pred=np.median(predict_samples,axis=0)
-    print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
+    #y_pred=np.median(predict_samples,axis=0)
+    #print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
     print("-----------------------------------------------------------")
 
 
-train_model()
+#train_model()
 test_model()
 
 plants_train.close()

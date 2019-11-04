@@ -9,6 +9,11 @@ class sgld(sgmcmc):
 
 
     def step(self,state,momentum,rng,**args):
+        for k,v in args.items():
+            if k=='n_batch':
+                n_batch=v
+            elif k=='n_data':
+                n_data=v
         epsilon=self.step_size
         q = deepcopy(state)
         nu = self.draw_momentum(rng,epsilon)

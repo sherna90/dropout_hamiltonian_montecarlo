@@ -23,7 +23,7 @@ class logistic:
         for var in par.keys():
             dim=(cp.asarray(par[var])).size
             K-=0.5*dim*cp.log(2*np.pi)
-            K+=0.5*dim*cp.log(self.hyper['alpha'])
+            K+=dim*cp.log(cp.sqrt(self.hyper['alpha']))
             K-=0.5*self.hyper['alpha']*cp.sum(cp.square(par[var]))
         return K
     
@@ -34,24 +34,22 @@ class logistic:
                 X=cp.asarray(v)
             elif k=='y_train':
                 y=cp.asarray(v)
-        yhat=self.net(par,X)
-        diff = y-yhat
+        yhat=self.net(par,**args)
+        diff = y.reshape(-1,1)-yhat
         #diff=diff[:,:-1]
-        grad_w = cp.dot(X.T, diff)
-        grad_b = cp.sum(diff, axis=0)
+        grad_w = cp.dot(X.T, diff)/float(y.shape[0])
+        grad_b = cp.sum(diff, axis=0)/float(y.shape[0])
         grad={}
-        grad['weights']=grad_w+self.hyper['alpha']*par['weights']
-        grad['weights']=-1.0*grad['weights']/float(y.shape[0])
-        grad['bias']=grad_b+self.hyper['alpha']*par['bias']
-        grad['bias']=-1.0*grad['bias']/float(y.shape[0])
+        grad['weights']=grad_w-self.hyper['alpha']*par['weights']
+        grad['weights']=-1.0*grad['weights']
+        grad['bias']=grad_b-self.hyper['alpha']*par['bias']
+        grad['bias']=-1.0*grad['bias']
         return grad	
 
     def net(self,par,**args):
         for k,v in args.items():
             if k=='X_train':
                 X=cp.asarray(v)
-            elif k=='y_train':
-                y=cp.asarray(v)
         y_linear = cp.dot(X, par['weights']) + par['bias']
         yhat = self.sigmoid(y_linear)
         return yhat
@@ -60,8 +58,8 @@ class logistic:
         norms=(1.0 + cp.exp(-y_linear))
         return 1.0 / norms
 
-    def loss(self, par,**args ):
-        return self.log_likelihood(par,**args)
+    def negative_log_posterior(self, par,**args ):
+        return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
 
     def log_likelihood(self, par,**args):
         for k,v in args.items():
@@ -69,13 +67,22 @@ class logistic:
                 X=cp.asarray(v)
             elif k=='y_train':
                 y=cp.asarray(v)
-        y_linear = cp.dot(X, par['weights']) + par['bias']
-        ll= cp.sum()
+        y_pred=self.net(par,**args)
+        ll= cp.mean(np.multiply(y,cp.log(y_pred))+np.multiply((1.0-y),cp.log(1.0-y_pred)))
         return ll
 
-    def predict(self, X, par):
-        X_gpu = cp.asarray(X)
-        yhat = self.net(X_gpu, par)
-        pred = 1 * cp.array( yhat > 0.5)
-        return cp.asnumpy(pred)
+    def predict(self, par,X,prob=False,batchsize=32):
+        par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
+        results=[]
+        for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
+            excerpt = slice(start_idx, start_idx + batchsize)
+            X_gpu=cp.asarray(X[excerpt])  
+            yhat=self.net(par_gpu,X_train=X_gpu)
+            if prob:
+                out=yhat
+            else:
+                out= (yhat > 0.5).astype(int).flatten()
+            results.append(cp.asnumpy(out))
+        results=np.asarray(results)
+        return results.flatten()	
 
