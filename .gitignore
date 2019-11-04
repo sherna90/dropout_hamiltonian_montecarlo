@@ -10,4 +10,7 @@ results/*
 *.pkl
 *.xlsx
 *.tar.gz
+<<<<<<< HEAD
 *.hdf5
+=======
+>>>>>>> 1e8c362bcc64281a25296a168d66d0b64eff095e
