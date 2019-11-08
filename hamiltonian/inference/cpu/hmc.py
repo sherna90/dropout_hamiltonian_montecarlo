@@ -45,22 +45,15 @@ class hmc:
         epsilon=self.step_size
         path_length=np.ceil(2*np.random.rand()*self.path_length/epsilon)
         grad_q=self.model.grad(q,**args)
-        # half step
-        for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon)*grad_q[var]
         # leapfrog step 
         for _ in np.arange(path_length-1):
             for var in self.start.keys():
+                p_new[var]-= (0.5*epsilon)*grad_q[var]
                 q_new[var]+= epsilon*p_new[var]
                 grad_q=self.model.grad(q_new,**args)
                 p_new[var]-= epsilon*grad_q[var]
-                positions.append(deepcopy(q_new)) 
-                momentums.append(deepcopy(p_new)) 
-        # half step
-        for var in self.start.keys():
-            q_new[var]+= epsilon*p_new[var]
-            grad_q=self.model.grad(q_new,**args)
-            p_new[var]=-(0.5*epsilon)*grad_q[var]
+                #positions.append(deepcopy(q_new)) 
+                #momentums.append(deepcopy(p_new)) 
         # negate momentum
         for var in self.start.keys():
             p_new[var]=-p_new[var]
@@ -83,7 +76,7 @@ class hmc:
         for var in p.keys():
             dim=(np.array(p[var])).size
             #K-=0.5*np.sum(self._inv_mass_matrix[var].reshape(self.start[var].shape)*np.square(p[var]))
-            K-=0.5*(dim*np.log(2*np.pi)+np.sum(np.square(p[var])))
+            K-=0.5*(np.sum(np.square(p[var])))
         return K
 
 
@@ -105,8 +98,8 @@ class hmc:
             #self.step_size,_=step_size_tuning.update(p_accept)
         _,avg_step_size=step_size_tuning.update(p_accept)
         print('adapted step size : ',avg_step_size)
-        if avg_step_size>self.step_size and avg_step_size<0.5:
-            self.step_size=avg_step_size
+        #if avg_step_size<0.5:
+        #    self.step_size=avg_step_size
         loss=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []
         posterior={var:[] for var in self.start.keys()}

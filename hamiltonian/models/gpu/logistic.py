@@ -50,7 +50,8 @@ class logistic:
         for k,v in args.items():
             if k=='X_train':
                 X=cp.asarray(v)
-        y_linear = cp.dot(X, par['weights']) + par['bias']
+        #y_linear = cp.dot(X, par['weights']) + par['bias']
+        y_linear = cp.dot(X, par['weights']) 
         yhat = self.sigmoid(y_linear)
         return yhat
 
@@ -68,7 +69,7 @@ class logistic:
             elif k=='y_train':
                 y=cp.asarray(v)
         y_pred=self.net(par,**args)
-        ll= cp.mean(np.multiply(y,cp.log(y_pred))+np.multiply((1.0-y),cp.log(1.0-y_pred)))
+        ll= cp.mean(np.multiply(y,cp.log(cp.squeeze(y_pred,axis=1)))+np.multiply((1.0-y),cp.log(cp.squeeze(1.0-y_pred,axis=1))))
         return ll
 
     def predict(self, par,X,prob=False,batchsize=32):

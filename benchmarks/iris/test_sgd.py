@@ -10,22 +10,21 @@ import matplotlib.pyplot as plt
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.softmax as base_model
+import hamiltonian.models.cpu.logistic as base_model
 import hamiltonian.inference.cpu.sgd as inference
 
 iris = datasets.load_iris()
 data = iris.data  
 labels = iris.target
-classes=np.unique(iris.target)
-X, y = iris.data, iris.target
-X = (X - X.mean(axis=0)) / X.std(axis=0)
-num_classes=len(classes)
-y=utils.one_hot(y,num_classes)
-
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=0,shuffle=True)
+classes=np.logical_or(labels==0 ,labels==1)
+# species == ('setosa', 'versicolor')
+# #['petal_length', 'petal_width'] 
+X_train, y_train = iris.data[classes,0:2], iris.target[classes]
+#X_train = (X_train - X_train.mean(axis=0)) / X_train.std(axis=0)
 
 D=X_train.shape[1]
-K=len(classes)
+N=X_train.shape[0]
+
 
 
 epochs = 3e4
@@ -34,17 +33,16 @@ batch_size=50
 alpha=1/10.
 dropout_rate=1.0
 
-start_p={'weights':np.random.random((D,K)),
-        'bias':np.random.random((K))}
+start_p={'weights':2*np.random.random((D,1)),'bias':2*np.random.random(1)}
 hyper_p={'alpha':alpha}
 
-model=base_model.softmax(hyper_p)
+model=base_model.logistic(hyper_p)
 optim=inference.sgd(model,start_p,step_size=eta)
-par,loss=optim.fit(epochs=epochs,batch_size=30,gamma=0.99,X_train=X_train,y_train=y_train,verbose=True)
-y_pred=model.predict(par,X_test)
-
-print(classification_report(y_test.argmax(axis=1), y_pred))
-print(confusion_matrix(y_test.argmax(axis=1), y_pred))
+par,loss=optim.fit(epochs=epochs,batch_size=N,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
+y_pred=model.predict(par,X_train,batchsize=N)
+print(par)
+print(classification_report(y_train, y_pred))
+print(confusion_matrix(y_train, y_pred))
 
 fig, ax = plt.subplots(figsize=(10,7))
 ax.plot(loss)

@@ -39,7 +39,7 @@ class sgd:
                 for var in par.keys():
                     momentum[var] = gamma * momentum[var] - self.step_size * grad_p[var]
                     par[var]+=momentum[var]
-            loss_val[i]=-1.*self.model.log_likelihood(par,X_train=X_batch,y_train=y_batch)
+            loss_val[i]=self.model.negative_log_posterior(par,X_train=X_batch,y_train=y_batch)
             if verbose and (i%(epochs/10)==0):
                 print('loss: {0:.4f}'.format(loss_val[i]))
         return par,loss_val
