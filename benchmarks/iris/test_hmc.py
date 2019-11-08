@@ -21,7 +21,7 @@ labels = iris.target
 classes=np.logical_or(labels==0 ,labels==1)
 # species == ('setosa', 'versicolor')
 # #['petal_length', 'petal_width'] 
-X_train, y_train = iris.data[classes,2:4], iris.target[classes]
+X_train, y_train = iris.data[classes,0:2], iris.target[classes]
 #X_train = (X_train - X_train.mean(axis=0)) / X_train.std(axis=0)
 
 D=X_train.shape[1]
@@ -31,15 +31,15 @@ N=X_train.shape[0]
 epochs = 2e3
 eta=0.05
 batch_size=500
-alpha=1/10.
+alpha=1/100.
 dropout_rate=1.0
 burnin=1e3
 
-start_p={'weights':np.random.random((D,1)),'bias':np.random.random(1)}
+start_p={'weights':2*np.random.random((D,1)),'bias':np.random.random(1)}
 hyper_p={'alpha':alpha}
 
 model=base_model.logistic(hyper_p)
-hmc=sampler.hmc(model,start_p,path_length=10,step_size=eta)
+hmc=sampler.hmc(model,start_p,path_length=1,step_size=eta)
 samples,loss,positions,momentums=hmc.sample(epochs,burnin,None,X_train=X_train,y_train=y_train)
 
 weights=np.squeeze(samples['weights'],axis=2)

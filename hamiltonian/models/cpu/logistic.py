@@ -25,6 +25,7 @@ class logistic:
         for k,v in args.items():
             if k=='X_train':
                 X=np.asarray(v)
+                n_data=X.shape[0]
             elif k=='y_train':
                 y=np.asarray(v)
         yhat=self.net(par,**args)
@@ -56,7 +57,7 @@ class logistic:
             if k=='X_train':
                 X=np.asarray(v)
                 n_data=X.shape[0]
-        return (-1.0/n_data)*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
+        return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
 
     def log_likelihood(self, par,**args):
         for k,v in args.items():

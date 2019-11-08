@@ -27,10 +27,10 @@ N=X_train.shape[0]
 
 
 
-epochs = 3e4
-eta=1e-4
+epochs = 4e4
+eta=1e-5
 batch_size=50
-alpha=1/10.
+alpha=1/100.
 dropout_rate=1.0
 
 start_p={'weights':2*np.random.random((D,1)),'bias':2*np.random.random(1)}
