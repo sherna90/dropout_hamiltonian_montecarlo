@@ -75,7 +75,7 @@ class hmc:
         K=0
         for var in p.keys():
             dim=(np.array(p[var])).size
-            K+=-dim*0.5*np.log((2*np.pi))-0.5*(np.sum(np.square(p[var])))
+            K+=0.5*(np.sum(np.square(p[var])))
         return K
 
 

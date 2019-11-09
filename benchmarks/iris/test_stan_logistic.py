@@ -68,7 +68,7 @@ print ("| Running Gaussian-prior with: ",algorithm ," | Iterations: ",iterations
 print (" ------------------------------------------------------------------------------------------------------------")
 
 
-if False:
+if True:
     sm = pystan.StanModel(model_code=model_code)
     with open('stan_model.pkl', 'wb') as f:
         pickle.dump(sm, f)

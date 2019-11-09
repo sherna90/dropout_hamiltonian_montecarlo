@@ -53,10 +53,6 @@ class logistic:
         return 1.0 / norms
 
     def negative_log_posterior(self, par,**args ):
-        for k,v in args.items():
-            if k=='X_train':
-                X=np.asarray(v)
-                n_data=X.shape[0]
         return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
 
     def log_likelihood(self, par,**args):
@@ -65,8 +61,8 @@ class logistic:
                 X=np.asarray(v)
             elif k=='y_train':
                 y=np.asarray(v)
-        y_pred=self.net(par,**args)
-        ll= np.sum(np.multiply(y,np.log(np.squeeze(y_pred,axis=1)))+np.multiply((1.0-y),np.log(np.squeeze(1.0-y_pred,axis=1))))
+        y_pred=np.squeeze(self.net(par,**args),axis=1)
+        ll = np.sum(np.multiply(y,np.log(y_pred))+np.multiply((1.0-y),np.log(1.0-y_pred)))
         return ll
 
 

@@ -50,27 +50,18 @@ class hmc:
         epsilon=self.step_size
         path_length=cp.ceil(2*cp.random.rand()*self.path_length/epsilon)
         grad_q=self.model.grad(q,**args)
-        # half step
-        for var in self.start.keys():
-            p_new[var]-= (0.5*epsilon)*grad_q[var]
         # leapfrog step 
         for _ in cp.arange(path_length-1):
             for var in self.start.keys():
-                q_new[var]=q_new[var]+epsilon*p_new[var]
+                p_new[var]-= (0.5*epsilon)*grad_q[var]
+                q_new[var]+= epsilon*p_new[var]
                 grad_q=self.model.grad(q_new,**args)
-                p_new[var] =p_new[var] - epsilon*grad_q[var]
-            positions.append(deepcopy(q_new)) 
-            momentums.append(deepcopy(p_new)) 
-        # half step
-        for var in self.start.keys():
-            q_new[var]+= epsilon*p_new[var]
-            grad_q=self.model.grad(q_new,**args)
-            p_new[var]=-(0.5*epsilon)*grad_q[var]
+                p_new[var]-= epsilon*grad_q[var]
+            #positions.append(deepcopy(q_new)) 
+            #momentums.append(deepcopy(p_new)) 
         # negate momentum
         for var in self.start.keys():
             p_new[var]=-p_new[var]
-        positions.append(deepcopy(q_new)) 
-        momentums.append(deepcopy(p_new)) 
         acceptprob = self.accept(q, q_new, p, p_new,**args)
         if cp.isfinite(acceptprob) and (cp.random.rand() < acceptprob): 
             q = q_new.copy()
@@ -89,7 +80,7 @@ class hmc:
         K=0
         for var in p.keys():
             dim=(cp.array(p[var])).size
-            K-=0.5*(dim*cp.log(2*cp.pi)+cp.sum(cp.square(p[var])))
+            K+=dim*0.5*cp.log((2*cp.pi))+0.5*(cp.sum(cp.square(p[var])))
         return K
 
 

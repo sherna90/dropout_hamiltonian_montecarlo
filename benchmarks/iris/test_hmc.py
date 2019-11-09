@@ -10,8 +10,8 @@ import seaborn as sns
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.logistic as base_model
-import hamiltonian.inference.cpu.hmc as sampler
+import hamiltonian.models.gpu.logistic as base_model
+import hamiltonian.inference.gpu.hmc as sampler
 
 from importlib import reload
 
@@ -31,7 +31,7 @@ N=X_train.shape[0]
 epochs = 2e3
 eta=0.05
 batch_size=500
-alpha=1/100.
+alpha=1/10.
 dropout_rate=1.0
 burnin=1e3
 

@@ -10,8 +10,13 @@ import matplotlib.pyplot as plt
 import sys 
 sys.path.append('./')
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.logistic as base_model
-import hamiltonian.inference.cpu.sgd as inference
+
+if sys.argv[1]=='--gpu':
+    import hamiltonian.models.gpu.logistic as base_model
+    import hamiltonian.inference.gpu.sgd as inference
+else:
+    import hamiltonian.models.cpu.logistic as base_model
+    import hamiltonian.inference.cpu.sgd as inference
 
 iris = datasets.load_iris()
 data = iris.data  
