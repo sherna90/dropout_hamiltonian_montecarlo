@@ -15,10 +15,10 @@ import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgd as inference
 import pickle
 
-eta=1e-2
+eta=1e-5
 epochs=100
-batch_size=32
-alpha=1e-2
+batch_size=250
+alpha=1./100.
 data_path = './data/'
 
 train_file='plant_village_train.hdf5'
@@ -35,8 +35,8 @@ D=X_train.shape[1]
 K=y_train.shape[1]
 import time
 
-start_p={'weights':np.random.random((D,K)),
-        'bias':np.random.random((K))}
+start_p={'weights':np.zeros((D,K)),
+        'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 
 start_time=time.time()
@@ -58,7 +58,7 @@ def test_model():
         print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
         print("-----------------------------------------------------------")
 
-train_model()
+#train_model()
 test_model()
 
 plants_train.close()

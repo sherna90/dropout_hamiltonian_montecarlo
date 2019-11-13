@@ -15,10 +15,10 @@ import hamiltonian.models.gpu.softmax as base_model
 import hamiltonian.inference.gpu.sgd as inference
 import pickle
 
-eta=1e-3
+eta=1e-5
 epochs=100
-batch_size=32
-alpha=1e-2
+batch_size=250
+alpha=1./100
 data_path = './data/'
 
 train_file='plant_village_train.hdf5'

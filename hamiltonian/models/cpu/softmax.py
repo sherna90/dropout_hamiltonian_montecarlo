@@ -26,10 +26,10 @@ class softmax:
         K=0
         for var in par.keys():
             dim=(np.array(par[var])).size
-            K-=0.5*dim*np.log(2*np.pi)
-            K+=0.5*dim*np.log(self.hyper['alpha'])
-            K-=0.5*self.hyper['alpha']*np.sum(np.square(par[var]))
-        return K/float(y.shape[0])
+            #K-=0.5*dim*np.log(2*np.pi)
+            #K+=0.5*dim*np.log(self.hyper['alpha'])
+            K-=0.5*self.hyper['alpha']*np.sum(np.square(par[var]))/dim
+        return K
 
     def softmax(self, y_linear):
         #y_linear=np.hstack((y_linear,np.zeros((y_linear.shape[0],1))))
@@ -56,9 +56,9 @@ class softmax:
         grad_w = np.dot(X.T, diff)
         grad_b = np.sum(diff, axis=0)
         grad={}
-        grad['weights']=grad_w+self.hyper['alpha']*par['weights']
+        grad['weights']=grad_w-self.hyper['alpha']*par['weights']
         grad['weights']=-1.0*grad['weights']
-        grad['bias']=grad_b+self.hyper['alpha']*par['bias']
+        grad['bias']=grad_b-self.hyper['alpha']*par['bias']
         grad['bias']=-1.0*grad['bias']
         return grad	
     

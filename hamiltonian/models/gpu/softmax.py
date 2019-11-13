@@ -33,10 +33,10 @@ class softmax:
         K=0
         for var in par.keys():
             dim=(cp.asarray(par[var])).size
-            K-=0.5*dim*cp.log(2*np.pi)
-            K+=0.5*dim*cp.log(self.hyper['alpha'])
-            K-=0.5*self.hyper['alpha']*cp.sum(cp.square(par[var]))
-        return K/float(y.shape[0])
+            #K-=0.5*dim*cp.log(2*np.pi)
+            #K-=0.5*dim*cp.log(1.0/self.hyper['alpha'])
+            K-=0.5*self.hyper['alpha']*cp.sum(cp.square(par[var]))/dim
+        return K
 
     def softmax(self, y_linear):
         exp = cp.exp(y_linear-cp.max(y_linear, axis=1).reshape((-1,1)))
@@ -62,9 +62,9 @@ class softmax:
         grad_w = cp.dot(X.T, diff)
         grad_b = cp.sum(diff, axis=0)
         grad={}
-        grad['weights']=grad_w+self.hyper['alpha']*par['weights']
+        grad['weights']=grad_w-self.hyper['alpha']*par['weights']
         grad['weights']=-1.0*grad['weights']
-        grad['bias']=grad_b+self.hyper['alpha']*par['bias']
+        grad['bias']=grad_b-y_self.hyper['alpha']*par['bias']
         grad['bias']=-1.0*grad['bias']
         return grad	
     
@@ -101,10 +101,11 @@ class softmax:
             results.append(cp.asnumpy(out))
         results=np.asarray(results)
         dims=results.shape
-        return results.reshape(dims[0]*dims[1],1)	
+        print(dims)
+        return results.reshape(dims[0]*dims[1],dims[2])	
 
 
-    def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=32):
+    def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=100):
         par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
         results=[]
         for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
