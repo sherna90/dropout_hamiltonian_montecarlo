@@ -80,7 +80,7 @@ class hmc:
         K=0
         for var in p.keys():
             dim=(cp.array(p[var])).size
-            K+=dim*0.5*cp.log((2*cp.pi))+0.5*(cp.sum(cp.square(p[var])))
+            K+=0.5*(cp.sum(cp.square(p[var])))
         return K
 
 
@@ -96,8 +96,11 @@ class hmc:
         if rng == None:
             rng = cp.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
-        for _ in tqdm(range(int(burnin))):
+        for i in tqdm(range(int(burnin))):
             q,p,positions,momentums,p_accept=self.step(q,p,rng,**args)
+            if self.verbose is not None and (i%(burnin/10)==0):
+                ll=self.model.negative_log_posterior(q,**args)
+                print('loss: {0:.4f}'.format(cp.asnumpy(ll)))
             #self.step_size,_=step_size_tuning.update(p_accept)
         loss=np.zeros(int(niter))
         sample_positions, sample_momentums = [], []

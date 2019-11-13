@@ -45,6 +45,8 @@ class logistic:
             if k=='X_train':
                 X=np.asarray(v)
         y_linear = np.dot(X, par['weights']) + par['bias']
+        y_linear=np.minimum(y_linear,-np.log(np.finfo(float).eps))
+        y_linear=np.maximum(y_linear,-np.log(1./np.finfo(float).tiny-1.0))
         yhat = self.sigmoid(y_linear)
         return yhat
 
@@ -53,7 +55,11 @@ class logistic:
         return 1.0 / norms
 
     def negative_log_posterior(self, par,**args ):
-        return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
+        for k,v in args.items():
+            if k=='X_train':
+                X=np.asarray(v)
+                n_data=X.shape[0]
+        return (-1.0/n_data)*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
 
     def log_likelihood(self, par,**args):
         for k,v in args.items():

@@ -92,8 +92,11 @@ class hmc:
             rng = np.random.RandomState()
         q,p=self.start,self.draw_momentum(rng)
         step_size_tuning = DualAveragingStepSize(self.step_size)
-        for _ in tqdm(range(int(burnin))):
+        for i in tqdm(range(int(burnin))):
             q,p,positions,momentums,p_accept=self.step(q,p,rng,**args)
+            if self.verbose is not None and (i%(burnin/10)==0):
+                ll=self.model.negative_log_posterior(q,**args)
+                print('loss: {0:.4f}'.format(ll))
             #self.step_size,_=step_size_tuning.update(p_accept)
         _,avg_step_size=step_size_tuning.update(p_accept)
         print('adapted step size : ',avg_step_size)

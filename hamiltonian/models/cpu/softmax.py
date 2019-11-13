@@ -55,9 +55,9 @@ class softmax:
         grad_b = np.sum(diff, axis=0)
         grad={}
         grad['weights']=grad_w+self.hyper['alpha']*par['weights']
-        grad['weights']=-1.0*grad['weights']/float(y.shape[0])
+        grad['weights']=-1.0*grad['weights']
         grad['bias']=grad_b+self.hyper['alpha']*par['bias']
-        grad['bias']=-1.0*grad['bias']/float(y.shape[0])
+        grad['bias']=-1.0*grad['bias']
         return grad	
     
     def log_likelihood(self,par,**args):
@@ -71,7 +71,11 @@ class softmax:
         return ll/float(y.shape[0])
         
     def negative_log_posterior(self,par,**args):
-        return -1.0*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
+        for k,v in args.items():
+            if k=='X_train':
+                X=np.asarray(v)
+                n_data=X.shape[0]
+        return (-1.0/n_data)*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
         #return -1.0*(self.log_likelihood(par,**args))
 
 

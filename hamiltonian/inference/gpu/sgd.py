@@ -41,6 +41,9 @@ class sgd:
                 for var in par_gpu.keys():
                     momentum[var] = gamma * momentum[var] - self.step_size * grad_p[var]
                     par_gpu[var]+=momentum[var]
+                #ll=self.model.log_likelihood(par_gpu,X_train=X_batch,y_train=y_batch)
+                #lp=self.model.log_prior(par_gpu,X_train=X_batch,y_train=y_batch)
+                #print('log-likelihood : {0}, log-prior: {1}'.format(ll,lp))
             loss_val[i]=self.model.negative_log_posterior(par_gpu,X_train=X_batch,y_train=y_batch)
             if verbose and (i%(epochs/10)==0):
                 print('loss: {0:.4f}'.format(cp.asnumpy(loss_val[i])))
