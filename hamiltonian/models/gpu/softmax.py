@@ -80,7 +80,7 @@ class softmax:
     def negative_log_posterior(self,par,**args):
         for k,v in args.items():
             if k=='X_train':
-                X=np.asarray(v)
+                X=cp.asarray(v)
                 n_data=X.shape[0]
         return (-1.0/n_data)*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
     
