@@ -64,7 +64,7 @@ class softmax:
         grad={}
         grad['weights']=grad_w-self.hyper['alpha']*par['weights']
         grad['weights']=-1.0*grad['weights']
-        grad['bias']=grad_b-y_self.hyper['alpha']*par['bias']
+        grad['bias']=grad_b-self.hyper['alpha']*par['bias']
         grad['bias']=-1.0*grad['bias']
         return grad	
     
@@ -101,7 +101,6 @@ class softmax:
             results.append(cp.asnumpy(out))
         results=np.asarray(results)
         dims=results.shape
-        print(dims)
         return results.reshape(dims[0]*dims[1],dims[2])	
 
 

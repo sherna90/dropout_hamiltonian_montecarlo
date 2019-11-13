@@ -53,7 +53,7 @@ def train_model():
 def test_model():
         with open('model.pkl','rb') as handler:
                 par=pickle.load(handler)
-        y_pred=model.predict(par,X_test[:],prob=True)
+        y_pred=model.predict(par,X_test[:],prob=True,batchsize=32)
         y_pred=y_pred.reshape(-1, y_pred.shape[-1])
         print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
         print("-----------------------------------------------------------")
