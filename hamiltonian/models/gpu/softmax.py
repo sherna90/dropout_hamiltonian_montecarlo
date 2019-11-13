@@ -44,8 +44,9 @@ class softmax:
         return exp / norms
 
     def net(self,par,X):
-        y_linear = cp.dot(X, par['weights'])
-        y_linear+= par['bias']
+        y_linear = cp.dot(X, par['weights'])+par['bias']
+        y_linear=cp.minimum(y_linear,-cp.log(cp.finfo(float).eps))
+        y_linear=cp.maximum(y_linear,-cp.log(1./cp.finfo(float).tiny-1.0))
         yhat = self.softmax(y_linear)
         return yhat
 
@@ -74,8 +75,7 @@ class softmax:
             elif k=='y_train':
                 y=cp.asarray(v)
         y_linear = cp.dot(X, par['weights']) + par['bias']
-        ll= cp.sum(self.cross_entropy(y_linear,y))
-        return ll/float(y.shape[0])
+        return cp.sum(self.cross_entropy(y_linear,y))
         
     def negative_log_posterior(self,par,**args):
         for k,v in args.items():
