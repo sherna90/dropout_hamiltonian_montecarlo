@@ -9,8 +9,13 @@ import h5py
 sys.path.append("./")
 
 import hamiltonian.utils as utils
-import hamiltonian.models.cpu.softmax as base_model
-import hamiltonian.inference.cpu.sgd as inference
+
+if sys.argv[1]=='--gpu':
+    import hamiltonian.models.gpu.softmax as base_model
+    import hamiltonian.inference.gpu.sgd as inference
+else:    
+    import hamiltonian.models.cpu.softmax as base_model
+    import hamiltonian.inference.cpu.sgd as inference
 
 eta=1e-5
 epochs=100

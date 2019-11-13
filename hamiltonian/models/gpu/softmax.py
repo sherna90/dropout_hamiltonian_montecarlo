@@ -36,7 +36,7 @@ class softmax:
             K-=0.5*dim*cp.log(2*np.pi)
             K+=0.5*dim*cp.log(self.hyper['alpha'])
             K-=0.5*self.hyper['alpha']*cp.sum(cp.square(par[var]))
-        return K
+        return K/float(y.shape[0])
 
     def softmax(self, y_linear):
         exp = cp.exp(y_linear-cp.max(y_linear, axis=1).reshape((-1,1)))
@@ -87,7 +87,7 @@ class softmax:
         return (-1.0/n_data)*(self.log_likelihood(par,**args)+self.log_prior(par,**args))
     
 
-    def predict(self, par,X,prob=False,batchsize=32):
+    def predict(self, par,X,prob=False,batchsize=100):
         par_gpu={var:cp.asarray(par[var]) for var in par.keys()}
         results=[]
         for start_idx in range(0, X.shape[0] - batchsize + 1, batchsize):
@@ -99,7 +99,9 @@ class softmax:
             else:
                 out=yhat.argmax(axis=1)
             results.append(cp.asnumpy(out))
-        return np.asarray(results)	
+        results=np.asarray(results)
+        dims=results.shape
+        return results.reshape(dims[0]*dims[1],1)	
 
 
     def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=32):
