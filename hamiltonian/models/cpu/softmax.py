@@ -69,6 +69,8 @@ class softmax:
             elif k=='y_train':
                 y=v
         y_linear = np.dot(X, par['weights']) + par['bias']
+        y_linear=np.minimum(y_linear,-np.log(np.finfo(float).eps))
+        y_linear=np.maximum(y_linear,-np.log(1./np.finfo(float).tiny-1.0))
         return np.sum(self.cross_entropy(y_linear,y))
         
     def negative_log_posterior(self,par,**args):

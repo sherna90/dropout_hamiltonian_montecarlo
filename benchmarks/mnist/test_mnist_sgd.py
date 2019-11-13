@@ -9,8 +9,8 @@ import h5py
 sys.path.append("./")
 
 import hamiltonian.utils as utils
-import hamiltonian.models.gpu.softmax as base_model
-import hamiltonian.inference.gpu.sgd as inference
+import hamiltonian.models.cpu.softmax as base_model
+import hamiltonian.inference.cpu.sgd as inference
 
 eta=1e-5
 epochs=100
@@ -46,7 +46,7 @@ model=base_model.softmax(hyper_p)
 optim=inference.sgd(model,start_p,step_size=eta)
 par,loss=optim.fit(epochs=epochs,batch_size=batch_size,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
 print('SGD, time:',time.time()-start_time)
-y_pred=model.predict(X_test,par_sgd,prob=False,batchsize=100)
+y_pred=model.predict(par,X_test,prob=False)
 cnf_matrix_sgd=confusion_matrix(y_test[:].argmax(axis=1), y_pred)
 print(classification_report(y_test[:].argmax(axis=1), y_pred))
 
