@@ -58,7 +58,7 @@ def test_model():
         print(classification_report(y_test[:].argmax(axis=1), y_pred.argmax(axis=1)))
         print("-----------------------------------------------------------")
 
-#train_model()
+train_model()
 test_model()
 
 plants_train.close()

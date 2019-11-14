@@ -18,7 +18,7 @@ import pickle
 eta=1e-5
 epochs=100
 batch_size=250
-alpha=1./100
+alpha=1./100.
 data_path = './data/'
 
 train_file='plant_village_train.hdf5'
@@ -35,22 +35,20 @@ D=X_train.shape[1]
 K=y_train.shape[1]
 import time
 
-start_p={'weights':np.random.random((D,K)),
-        'bias':np.random.random((K))}
+start_p={'weights':np.zeros((D,K)),
+        'bias':np.zeros((K))}
 hyper_p={'alpha':alpha}
 
 start_time=time.time()
 model=base_model.softmax(hyper_p)
 
 def train_model():
-    optim=inference.sgd(model,start_p,step_size=eta)
-    par,loss=optim.fit_dropout(epochs=epochs,batch_size=batch_size,p=0.5,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
-    print('SGD, time:',time.time()-start_time)
-    loss=pd.DataFrame(loss)
-    loss.to_csv('loss.csv',sep=',',header=False)
-    import pickle
-    with open('model.pkl','wb') as handler:
-        pickle.dump(par,handler)
+        optim=inference.sgd(model,start_p,step_size=eta)
+        par,loss=optim.fit_dropout(epochs=epochs,batch_size=batch_size,p=0.5,gamma=0.9,X_train=X_train,y_train=y_train,verbose=True)
+        print('SGD, time:',time.time()-start_time)
+        loss=pd.DataFrame(loss)
+        with open('model.pkl','wb') as handler:
+                pickle.dump(par,handler)
 
 def test_model():
     with open('model.pkl','rb') as handler:
