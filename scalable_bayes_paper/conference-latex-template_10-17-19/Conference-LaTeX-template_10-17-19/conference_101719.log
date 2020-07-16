@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.3.20)  5 NOV 2019 17:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.2.1)  24 MAR 2020 09:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -468,8 +468,8 @@ Before submitting the final camera ready copy, remember to:
 [3 <./fig1.png (PNG copy)>] (./conference_101719.aux) ) 
 Here is how much of TeX's memory you used:
  4447 strings out of 492982
- 64314 string characters out of 6134896
- 133903 words of memory out of 5000000
+ 64314 string characters out of 6134897
+ 133900 words of memory out of 5000000
  7930 multiletter control sequences out of 15000+600000
  54745 words of font info for 115 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191

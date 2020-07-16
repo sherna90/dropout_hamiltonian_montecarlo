@@ -25,18 +25,23 @@
 	
 	\title{A Comparison of Stochastic Gradient MCMC using Multi-Core and GPU Architectures}
 	
-	\author{\IEEEauthorblockN{Sergio Hern\'andez \thanks{\footnotemark[1] Laboratorio de Procesamiento de Informaci\'on Geoespacial. Universidad Cat\'olica del Maule. Chile.}\footnotemark[1]}
-		\IEEEauthorblockA{shernandez@ucm.cl}
-		\and
-		\IEEEauthorblockN{Jos\'e Vald\'es \thanks{\footnotemark[2] Centro de Innovaci\'on en Ingenier\'ia Aplicada.  Universidad Cat\'olica del Maule. Chile.}\footnotemark[2]}
-		\and
-		\IEEEauthorblockN{Matias Valdenegro \thanks{\footnotemark[3] German Research Center for Artificial Intelligence, Robotics Innovation Center. Germany.}\footnotemark[3]}
+	\author{
+	\IEEEauthorblockN{Sergio Hern\'andez}
+	\IEEEauthorblockA{Laboratorio de Procesamiento de Informaci\'on Geoespacial.\\ Universidad Cat\'olica del Maule. Chile. shernandez@ucm.cl}
+	\and
+	\IEEEauthorblockN{Jos\'e Vald\'es}
+	\IEEEauthorblockA{ Centro de Innovaci\'on en Ingenier\'ia Aplicada.\\  Universidad Cat\'olica del Maule. Chile.}
+	\and
+	\IEEEauthorblockN{Matias Valdenegro}
+	\IEEEauthorblockA{ German Research Center for Artificial Intelligence.\\ Robotics Innovation Center. Germany.}
 	}
 	
+	\IEEEoverridecommandlockouts
+	\IEEEpubid{\makebox[\columnwidth]{978-1-7281-9716-6/20/\$31.00~\copyright2020 IEEE \hfill} \hspace{\columnsep}\makebox[\columnwidth]{ }}
 	\maketitle
-	
+	\IEEEpubidadjcol
 	\begin{abstract}
-		Deep learning models are traditionally used in big data scenarios. When there is not enough training data to fit a large model, transfer learning repurpose the learned features from an existing model and re-train the lower layers for the new task. Bayesian inference techniques can be used to capture the uncertainty of the new model but it comes with a high computational cost. In this paper, we compare the run time performance of an Stochastic Gradient Markov Chain Monte Carlo method using two different architectures, GPU and multi-core CPU. As opposed to the widely usage of GPUs for deep learning, we found significant advantages from using modern CPU architectures.
+		Deep learning models are traditionally used in big data scenarios. When there is not enough training data to fit a large model, transfer learning re-purpose the learned features from an existing model and re-train the lower layers for the new task. Bayesian inference techniques can be used to capture the uncertainty of the new model but it comes with a high computational cost. In this paper, the run time performance of an Stochastic Gradient Markov Chain Monte Carlo method using two different architectures is compared, namely GPU and multi-core CPU. As opposed to the widely usage of GPUs for deep learning, significant advantages from using modern CPU architectures.
 	\end{abstract}
 	
 	\begin{IEEEkeywords}
@@ -48,17 +53,17 @@ As the amount of stored data is increased. analytical techniques for processing 
 
 In particular. Bayesian inference is used for computing posterior distributions of the model parameters. In order to obtain such posterior estimates. Markov Chain Monte Carlo (MCMC) methods approximate intractable integrals as an expectation using a finite number of samples. However, this expectation requires the full dataset in order to guarantee convergence.  Splitting a big dataset into smaller batches and running parallel chains is a simple alternative for scaling out Bayesian inference. Nevertheless, each chain will have its own posterior approximation and there is no standard method for recombining the results into a single posterior distribution. 
 
-The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm is an approximation technique that fully exploits data subsets \cite{welling2011bayesian}. The method replaces gradients and likelihood evaluations required by standard MCMC by stochastic gradients based on data subsets (mini-batches). Some implementations can be found in software libraries such as Edward \cite{Tran2018}, ZhuSuan \cite{zhusuan2017} and the SGMCMC package \cite{baker2017sgmcmc}. All of these implementations are based on TensorFlow\footnote{\url{https://www.tensorflow.org/}} as a backend and therefore inherit the scalability of GPU computation. However, there is little research done on the scalability of SGLD using modern CPU architectures. Therefore, in this paper we present a novel comparison of SGLD implementations on GPUs and CPUs. 
+The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm is an approximation technique that fully exploits data subsets \cite{welling2011bayesian}. The method replaces gradients and likelihood evaluations required by standard MCMC by stochastic gradients based on data subsets (mini-batches). Some implementations can be found in software libraries such as Edward \cite{Tran2018}, ZhuSuan \cite{zhusuan2017} and the SGMCMC package \cite{baker2017sgmcmc}. All of these implementations are based on TensorFlow\footnote{\url{https://www.tensorflow.org/}} as a backend and therefore inherit the scalability of GPU computation. However, there is little research done on the scalability of SGLD using modern CPU architectures. Therefore, this paper presents a novel comparison of SGLD implementations on GPUs and CPUs. 
 % 
 \subsection{Related work}
-Deep learning research has attracted a lot of attention from practitioners and industry. Therefore, most modern models require specific hardware accelerators such as GPUs and multi-core CPUs. Benchmark suites such as BenchIP \cite{Tao2018} and BenchNN \cite{Chen2012} have been proposed for the task of hardware evaluation for neural networks. However, there is little research done on the scalability of SGLD using modern CPU architectures. Therefore, in this paper we present a novel comparison of SGLD implementations on GPUs and CPUs. 
+Deep learning research has attracted a lot of attention from practitioners and industry. Therefore, most modern models require specific hardware accelerators such as GPUs and multi-core CPUs. Benchmark suites such as BenchIP \cite{Tao2018} and BenchNN \cite{Chen2012} have been proposed for the task of hardware evaluation for neural networks. However, there is little research done on the scalability of SGLD using modern CPU architectures. 
 
 \section{Stochastic Gradient MCMC}
 Stochastic Gradient Descent (SGD) is an optimization technique traditionally used for out-of-core training deep learning models. Let $\mathbf{D}=\{\mathbf{d_1},\ldots,\mathbf{d_N}\}$ represent a typical dataset used for classification problems, as a set of tuples $\mathbf{d}=(\mathbf x,y)$ that contains features $\mathbf x \in \mathbb R^D$ and labels $y=\{1,\ldots,K\}$. Conversely, the stochastic optimization procedure iterates  over mini-batches of size $B \ll N$ and computes a point estimate $\theta^\ast = \operatorname{argmax} p(\mathbf{D} \vert \theta)$.
 
 Deep learning models such as convolutional neural networks may exploit model parallelism for fully connected layers and data parallelism for convolutional layers. The former training technique applies parallelism across the model dimension (number of features) and the latter technique applies parallelism across the data dimension (number of examples). In a model parallel setting, different workers are trained on the same batch and they recombine results as soon as possible. In the other hand, in a data parallel setting, each worker is trained on different batches of data \cite{LI201695}. 
 
-In the Bayesian framework, we consider the unknown parameter $\theta$ as a random variable. The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm uses an stochastic gradient approximation to generate samples from the posterior distribution $p(\theta \vert \mathbf{D})$. The SGLD algorithm generate proposals using:
+In the Bayesian framework, the unknown parameter $\theta$ is considered as a random variable. The Stochastic Gradient Langevin Monte Carlo (SGLD) algorithm uses an stochastic gradient approximation to generate samples from the posterior distribution $p(\theta \vert \mathbf{D})$. The SGLD algorithm generate proposals using:
 
 \begin{align}
 \theta_{t+1}=\theta_{t}+\frac{\epsilon_t}{2}\Big(\nabla\operatorname{log}p(\theta_{t})+\frac{N}{B} \sum_i^B \nabla \operatorname{log} p(\mathbf{d_i} \vert \theta_{t})\Big) + \eta_t
@@ -67,10 +72,10 @@ In the Bayesian framework, we consider the unknown parameter $\theta$ as a rando
 
 where $\eta_t \sim \mathcal N(0,\epsilon_t)$ and $\epsilon_t \mapsto 0$ is a time-decaying step size.
 
-It is important to notice that using SGLD on a fully connected layer requires dense matrix multiplications for computing the log-likelihood and the log-prior. Therefore, we present two implementations using two different architectures.  
-    
+It is important to notice that using SGLD on a fully connected layer requires dense matrix multiplications for computing the log-likelihood and the log-prior. 
+
 \subsection{GPU SG-MCMC}
-Graphic Processing Units (GPus) are many-core processors that offer massively parallel computation. GPUs are well suited for data parallel operations such as computing the gradient in convolutional neural networks and Monte Carlo methods \cite{lee2010utility}. In order to implement the SGLD algorithm we use CuPy, a Python library for GPU computation\footnote{\url{https://cupy.chainer.org/}}. The library includes optimized GPU array manipulation and linear algebra routines, which are compatible with other CPU array manipulation routines such as Numpy. 
+Graphic Processing Units (GPus) are many-core processors that offer massively parallel computation. GPUs are well suited for data parallel operations such as computing the gradient in convolutional neural networks and Monte Carlo methods \cite{lee2010utility}. In order to implement the SGLD algorithm, a Python library for GPU computation is used \footnote{\url{https://cupy.chainer.org/}}. The library includes optimized GPU array manipulation and linear algebra routines, which are compatible with other CPU array manipulation routines such as Numpy. 
  
  
 \begin{figure}
@@ -105,7 +110,7 @@ using Python 3.4.9.
 \subsection{Synthetic data}
 In this section, the goal is to demonstrate performance and scalability of the SGLD algorithm. The GPU and CPU implementations are tested using randomly generated multi-class classification problems. Different combinations on the number of features $D$ and number of instances $N$ were tested. The number of classes was set to $K=3$, the number of epochs was set to $E=2 \times 10^4$ and the size of the mini-batches was set to $B=50$ for all examples.
 
-Firstly, a serial version  of the SGD algorithm is tested on the CPU and compared with a parallel implementation on the GPU. All experiments are run on a Server with an Intel Xeon E5-2620 CPU with 12 cores using a single fully connected softmax layer (which is widely used in transfer learning). The server is also equipped with an NVIDIA TITAN X GPU and both implementations were developed using Python 3.4.9. Table \ref{tab:sgd} shows the run time for the different values of $D$ and $N$. According to \cite{LI201695}, convolutional layers contain $90\%$ of the computation and $5\%$ of the parameters, while fully connected layers contain $95\%$ of the parameters and $5\%-10\%$ of the computation. Consistently, since there is a fully connected layer operating on a small batch of data, there is no speedup and the GPU implementation is about $10$x slower than the CPU implementation.
+Firstly, a serial version  of the SGD algorithm is tested on the CPU and compared with a parallel implementation on the GPU. All experiments are run on a Server with an Intel Xeon E5-2620 CPU with 12 cores using a single fully connected softmax layer (which is widely used in transfer learning). Table \ref{tab:sgd} shows the run time for the different values of $D$ and $N$. According to \cite{LI201695}, convolutional layers contain $90\%$ of the computation and $5\%$ of the parameters, while fully connected layers contain $95\%$ of the parameters and $5\%-10\%$ of the computation. Consistently, since there is a fully connected layer operating on a small batch of data, there is no speedup and the GPU implementation is about $10$x slower than the CPU implementation.
 
 \begin{table}[h]
 	\centering
@@ -163,9 +168,11 @@ Secondly, the run time behavior of a multi-core CPU implementation of SGLD is sh
 \end{table}
 
 \subsection{Bayesian transfer learning}
-Training deep neural networks requires a vast amount of labeled data in order to achieve optimal performance. However, it becomes harder to collect data for any specific task and manually label examples as required for supervised classification problems. Transfer learning can alleviate the need of such amount of data by utilizing knowledge from previously learned tasks and applying this to the new task. In this experiment, we perform Bayesian transfer learning for training a plant diseases dataset using a previously trained deep neural network.
 
-The Plant Village dataset contains $54306$ images with combinations of $14$ crops and $26$ diseases (see Figure \ref{fig:plantvillagesubset}), leaving a total number of $K=38$ classes. The images consist of $256 \times 256$ pixels in the RGB color space \cite{mohanty2016using}.  The VGG16 deep neural network with weights trained on the Imagenet dataset is used to extract features from the plants diseases images. The original class distribution is unbalanced, therefore random over-sampling is used to achieve a uniform class distribution, leaving a total number os $N=203500$ training samples and $5700$ test samples. Moreover, images are resized to $150 \times 150$ pixels and min\-max normalization is used on each one of the examples.
+ 
+Training deep neural networks requires a vast amount of labeled data in order to achieve optimal performance. However, it becomes harder to collect data for any specific task and manually label examples as required for supervised classification problems. Transfer learning can alleviate the need of such amount of data by utilizing knowledge from previously learned tasks and applying this to the new task. 
+
+In this section, Bayesian transfer learning for training a plant diseases dataset is considered. The Plant Village dataset contains $54306$ images with combinations of $14$ crops and $26$ diseases (see Figure \ref{fig:plantvillagesubset}), leaving a total number of $K=38$ classes \cite{mohanty2016using}. The images consist of $256 \times 256$ pixels in the RGB color space.  The VGG16 deep neural network with weights trained on the Imagenet dataset is used to extract features from the plants diseases images. The original class distribution is unbalanced, therefore random over-sampling is used to achieve a uniform class distribution, leaving a total number os $N=203500$ training samples and $5700$ test samples. Moreover, images are resized to $150 \times 150$ pixels and min\-max normalization is used on each one of the examples.
 
 \begin{figure}
 	\includegraphics[width=\hsize]{figures/plant_village_subset}
@@ -178,21 +185,21 @@ Firstly, the SGD algorithm is used to train a total number of $100$ epochs using
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{.3\textwidth}
-		\includegraphics[width=\textwidth,height=4cm]{results/sgd_losloss}
+	\begin{subfigure}[b]{.5\textwidth}
+		\includegraphics[width=\textwidth,height=6cm]{results/sgd_losloss}
 		\caption{SGD log-loss.}
 		\label{fig:sgd_cpu_gpu}
 	\end{subfigure}
 	~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
 	%(or a blank line to force the subfigure onto a new line)
-	\begin{subfigure}[b]{0.2\textwidth}
+	\begin{subfigure}[b]{0.5\textwidth}
 		\includegraphics[width=\textwidth]{results/plants_confusion_matrix_sgd_gpu}
 		\caption{SGD GPU confusion matrix.}
 		\label{fig:sgd_gpu_performance}
 	\end{subfigure}
 	~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
 	%(or a blank line to force the subfigure onto a new line)
-	\begin{subfigure}[b]{0.2\textwidth}
+	\begin{subfigure}[b]{0.5\textwidth}
 		\includegraphics[width=\textwidth]{results/plants_confusion_matrix_sgd_cpu}
 		\caption{SGD CPU confusion matrix.}
 		\label{fig:sgd_cpu_performance}
@@ -204,21 +211,21 @@ Secondly, GPU and multi-core CPU implementations of the SGLD algorithm are used 
 
 \begin{figure}
 	\centering
-	\begin{subfigure}[b]{0.3\textwidth}
-		\includegraphics[width=\textwidth,height=4cm]{results/sgld_losloss}
+	\begin{subfigure}[b]{0.5\textwidth}
+		\includegraphics[width=\textwidth,height=6cm]{results/sgld_losloss}
 		\caption{SGLD log-loss.}
 		\label{fig:sgld_cpu_gpu}
 	\end{subfigure}
 	~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
 	%(or a blank line to force the subfigure onto a new line)
-	\begin{subfigure}[b]{0.2\textwidth}
+	\begin{subfigure}[b]{0.5\textwidth}
 		\includegraphics[width=\textwidth]{results/plants_confusion_matrix_sgld_gpu}
 		\caption{SGLD GPUconfusion matrix.}
 		\label{fig:sgld_gpu_performance}
 	\end{subfigure}
 	~ %add desired spacing between images, e. g. ~, \quad, \qquad, \hfill etc. 
 	%(or a blank line to force the subfigure onto a new line)
-	\begin{subfigure}[b]{0.2\textwidth}
+	\begin{subfigure}[b]{0.5\textwidth}
 		\includegraphics[width=\textwidth]{results/plants_confusion_matrix_sgld_cpu}
 		\caption{SGLD CPU confusion matrix.}
 		\label{fig:sgld_cpu_performance}
@@ -244,9 +251,9 @@ The performance of the SGLD model is evaluated using the mean of the posterior s
 	\label{tab:performance} 
 \end{table}
 
-
+\clearpage
 \section{Conclusions}
-SGD is a serial algorithm that can be effectively computed using data parallel operations for large scale deep learning models such as convolutional neural nets. Although SGLD is an stochastic gradient MCMC method based on SGD, the algorithm can benefit from data parallel operations in a multi-core CPU architecture when the model is shallow (e.g. a single fully connected layer).  The speedups achieved with synthetic data are not compatible with other real data sets such as transfer learning data sets, which is mainly due to the size of the data batches. Therefore, hybrid approaches based on multi-core CPU and multi-GPU could also be beneficial in real life scenarios. 
+In this work, a novel comparison between multi-core CPU and GPU architectures for SGLD is performed. SGD is a serial algorithm that can be effectively computed using data parallel operations for large scale deep learning models. Although SGLD is an stochastic gradient MCMC method based on SGD, the algorithm can benefit from data parallel operations in a multi-core CPU architecture when the model is shallow (e.g. a single fully connected layer).  The speedups achieved with synthetic data are not compatible with other real data sets such as transfer learning data sets, which is mainly due to the size of the data batches and the model parameters. Future work will consider hybrid approaches based on multi-core CPU and multi-GPU that could also be beneficial in real life scenarios. 
 \bibliographystyle{unsrt}
 \bibliography{biblio}
 \end{document}

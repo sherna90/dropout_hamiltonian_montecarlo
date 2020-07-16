@@ -1,6 +1,6 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.3.20)  5 NOV 2019 18:47
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=pdflatex 2019.2.1)  8 APR 2020 15:48
 entering extended mode
- restricted \write18 enabled.
+ \write18 enabled.
  %&-line parsing enabled.
 **paper_ingelectra.tex
 (./paper_ingelectra.tex
@@ -1584,19 +1584,24 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 24.
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
 \c__siunitx_mathtt_int=\count321
- [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
+
+** ATTENTION: Overriding command lockouts (line 39).
+LaTeX Font Info:    Try loading font information for TS1+ptm on input line 67.
+(/usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
+File: ts1ptm.fd 2001/06/04 font definitions for TS1/ptm.
+) [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 
 ]
 <figures/cpu_architechture.png, id=21, 426.84468pt x 377.15906pt>
 File: figures/cpu_architechture.png Graphic file (type png)
 <use figures/cpu_architechture.png>
-Package pdftex.def Info: figures/cpu_architechture.png  used on input line 79.
+Package pdftex.def Info: figures/cpu_architechture.png  used on input line 84.
 (pdftex.def)             Requested size: 206.39685pt x 182.3752pt.
 <figures/gpu_architechture.png, id=23, 426.84468pt x 377.15906pt>
 File: figures/gpu_architechture.png Graphic file (type png)
 <use figures/gpu_architechture.png>
-Package pdftex.def Info: figures/gpu_architechture.png  used on input line 86.
+Package pdftex.def Info: figures/gpu_architechture.png  used on input line 91.
 (pdftex.def)             Requested size: 206.39685pt x 182.3752pt.
 
 
@@ -1607,39 +1612,84 @@ LaTeX Warning: `h' float specifier changed to `ht'.
 File: figures/plant_village_subset.png Graphic file (type png)
 <use figures/plant_village_subset.png>
 Package pdftex.def Info: figures/plant_village_subset.png  used on input line 1
-71.
+78.
 (pdftex.def)             Requested size: 252.0pt x 168.3237pt.
 <results/sgd_losloss.pdf, id=32, 462.52798pt x 346.89601pt>
 File: results/sgd_losloss.pdf Graphic file (type pdf)
 <use results/sgd_losloss.pdf>
-Package pdftex.def Info: results/sgd_losloss.pdf  used on input line 182.
-(pdftex.def)             Requested size: 154.80138pt x 113.80908pt.
+Package pdftex.def Info: results/sgd_losloss.pdf  used on input line 189.
+(pdftex.def)             Requested size: 258.01172pt x 170.71628pt.
 <results/plants_confusion_matrix_sgd_gpu.pdf, id=33, 379.17302pt x 338.63966pt>
 
 File: results/plants_confusion_matrix_sgd_gpu.pdf Graphic file (type pdf)
 <use results/plants_confusion_matrix_sgd_gpu.pdf>
 Package pdftex.def Info: results/plants_confusion_matrix_sgd_gpu.pdf  used on i
-nput line 189.
-(pdftex.def)             Requested size: 103.19843pt x 92.1625pt.
-
-Underfull \hbox (badness 2443) in paragraph at lines 190--190
-[]\OT1/ptm/m/n/9 (b) |SGD GPU con-fu-sion
- []
-
+nput line 196.
+(pdftex.def)             Requested size: 258.0pt x 230.42693pt.
 <results/plants_confusion_matrix_sgd_cpu.pdf, id=34, 379.17302pt x 338.63966pt>
 
 File: results/plants_confusion_matrix_sgd_cpu.pdf Graphic file (type pdf)
 <use results/plants_confusion_matrix_sgd_cpu.pdf>
 Package pdftex.def Info: results/plants_confusion_matrix_sgd_cpu.pdf  used on i
-nput line 196.
-(pdftex.def)             Requested size: 103.19843pt x 92.1625pt.
+nput line 203.
+(pdftex.def)             Requested size: 258.0pt x 230.42693pt.
 
-Underfull \hbox (badness 3128) in paragraph at lines 197--197
-[]\OT1/ptm/m/n/9 (c) |SGD CPU con-fu-sion
+Overfull \hbox (6.0pt too wide) in paragraph at lines 188--207
+ [][] 
  []
 
-[3 <./figures/plant_village_subset.png> <./results/sgd_losloss.pdf> <./results/
-plants_confusion_matrix_sgd_gpu.pdf
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 188--207
+ [] 
+ []
+
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 188--207
+ [] 
+ []
+
+
+LaTeX Warning: Float too large for page by 41.17017pt on input line 208.
+
+<results/sgld_losloss.pdf, id=35, 462.52798pt x 346.89601pt>
+File: results/sgld_losloss.pdf Graphic file (type pdf)
+<use results/sgld_losloss.pdf>
+Package pdftex.def Info: results/sgld_losloss.pdf  used on input line 215.
+(pdftex.def)             Requested size: 258.01172pt x 170.71628pt.
+<results/plants_confusion_matrix_sgld_gpu.pdf, id=36, 379.17302pt x 338.63966pt
+>
+File: results/plants_confusion_matrix_sgld_gpu.pdf Graphic file (type pdf)
+<use results/plants_confusion_matrix_sgld_gpu.pdf>
+Package pdftex.def Info: results/plants_confusion_matrix_sgld_gpu.pdf  used on 
+input line 222.
+(pdftex.def)             Requested size: 258.0pt x 230.42693pt.
+<results/plants_confusion_matrix_sgld_cpu.pdf, id=37, 379.17302pt x 338.63966pt
+>
+File: results/plants_confusion_matrix_sgld_cpu.pdf Graphic file (type pdf)
+<use results/plants_confusion_matrix_sgld_cpu.pdf>
+Package pdftex.def Info: results/plants_confusion_matrix_sgld_cpu.pdf  used on 
+input line 229.
+(pdftex.def)             Requested size: 258.0pt x 230.42693pt.
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 214--233
+ [][] 
+ []
+
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 214--233
+ [] 
+ []
+
+
+Overfull \hbox (6.0pt too wide) in paragraph at lines 214--233
+ [] 
+ []
+
+
+LaTeX Warning: Float too large for page by 41.17017pt on input line 234.
+
+[3 <./figures/plant_village_subset.png>] [4 <./results/sgd_losloss.pdf> <./resu
+lts/plants_confusion_matrix_sgd_gpu.pdf
 
 pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgd_g
 pu.pdf): PDF inclusion: multiple pdfs with page group included in a single page
@@ -1649,32 +1699,21 @@ pu.pdf): PDF inclusion: multiple pdfs with page group included in a single page
 pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgd_c
 pu.pdf): PDF inclusion: multiple pdfs with page group included in a single page
 
->]
-<results/sgld_losloss.pdf, id=140, 462.52798pt x 346.89601pt>
-File: results/sgld_losloss.pdf Graphic file (type pdf)
-<use results/sgld_losloss.pdf>
-Package pdftex.def Info: results/sgld_losloss.pdf  used on input line 208.
-(pdftex.def)             Requested size: 154.80138pt x 113.80908pt.
-<results/plants_confusion_matrix_sgld_gpu.pdf, id=141, 379.17302pt x 338.63966p
-t>
-File: results/plants_confusion_matrix_sgld_gpu.pdf Graphic file (type pdf)
-<use results/plants_confusion_matrix_sgld_gpu.pdf>
-Package pdftex.def Info: results/plants_confusion_matrix_sgld_gpu.pdf  used on 
-input line 215.
-(pdftex.def)             Requested size: 103.19843pt x 92.1625pt.
+> <./results/sgld_losloss.pdf
 
-Underfull \hbox (badness 4229) in paragraph at lines 216--216
-[]\OT1/ptm/m/n/9 (b) |SGLD GPU-con-fu-sion
- []
+pdfTeX warning: /usr/bin/pdflatex (file ./results/sgld_losloss.pdf): PDF inclus
+ion: multiple pdfs with page group included in a single page
+> <./results/plants_confusion_matrix_sgld_gpu.pdf
 
-<results/plants_confusion_matrix_sgld_cpu.pdf, id=142, 379.17302pt x 338.63966p
-t>
-File: results/plants_confusion_matrix_sgld_cpu.pdf Graphic file (type pdf)
-<use results/plants_confusion_matrix_sgld_cpu.pdf>
-Package pdftex.def Info: results/plants_confusion_matrix_sgld_cpu.pdf  used on 
-input line 222.
-(pdftex.def)             Requested size: 103.19843pt x 92.1625pt.
-(./paper_ingelectra.bbl)
+pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgld_
+gpu.pdf): PDF inclusion: multiple pdfs with page group included in a single pag
+e
+> <./results/plants_confusion_matrix_sgld_cpu.pdf
+
+pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgld_
+cpu.pdf): PDF inclusion: multiple pdfs with page group included in a single pag
+e
+>] (./paper_ingelectra.bbl)
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -1686,47 +1725,39 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[4 <./results/sgld_losloss.pdf> <./results/plants_confusion_matrix_sgld_gpu.pdf
+[5
 
 
-pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgld_
-gpu.pdf): PDF inclusion: multiple pdfs with page group included in a single pag
-e
-> <./results/plants_confusion_matrix_sgld_cpu.pdf
-
-pdfTeX warning: /usr/bin/pdflatex (file ./results/plants_confusion_matrix_sgld_
-cpu.pdf): PDF inclusion: multiple pdfs with page group included in a single pag
-e
->] (./paper_ingelectra.aux) ) 
+] (./paper_ingelectra.aux) ) 
 Here is how much of TeX's memory you used:
- 27088 strings out of 492982
- 555456 string characters out of 6134896
- 670652 words of memory out of 5000000
- 30272 multiletter control sequences out of 15000+600000
- 573208 words of font info for 110 fonts, out of 8000000 for 9000
+ 27111 strings out of 492982
+ 555796 string characters out of 6134897
+ 670648 words of memory out of 5000000
+ 30291 multiletter control sequences out of 15000+600000
+ 573522 words of font info for 111 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  55i,12n,54p,10378b,527s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texlive/texmf-dist/fonts/enc/dvips/bas
-e/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.p
-fb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></us
-r/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texl
-ive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/tex
-mf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist
-/fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/
-type1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/pu
-blic/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/ams
-fonts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/
-cm/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy
-8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10
-.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/shar
-e/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texm
-f-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/ty
-pe1/urw/times/utmri8a.pfb>
-Output written on paper_ingelectra.pdf (4 pages, 818772 bytes).
+{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base
+/8r.enc}</usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pf
+b></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx7.pfb></usr
+/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></usr/share
+/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/share/texli
+ve/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></usr/share/texlive/texm
+f-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></usr/share/texlive/texmf-dist/
+fonts/type1/public/amsfonts/cm/cmr10.pfb></usr/share/texlive/texmf-dist/fonts/t
+ype1/public/amsfonts/cm/cmr7.pfb></usr/share/texlive/texmf-dist/fonts/type1/pub
+lic/amsfonts/cm/cmr8.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmsy10.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmsy7.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8
+.pfb></usr/share/texlive/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.
+pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share
+/texlive/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></usr/share/texlive/texmf
+-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/typ
+e1/urw/times/utmri8a.pfb>
+Output written on paper_ingelectra.pdf (5 pages, 818807 bytes).
 PDF statistics:
- 312 PDF objects out of 1000 (max. 8388607)
- 106 compressed objects within 2 object streams
+ 315 PDF objects out of 1000 (max. 8388607)
+ 107 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  58 words of extra memory for PDF output out of 10000 (max. 10000000)
 
