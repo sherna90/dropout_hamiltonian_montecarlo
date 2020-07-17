@@ -26,9 +26,7 @@ class softmax:
         K=0
         for var in par.keys():
             dim=(np.array(par[var])).size
-            #K-=0.5*dim*np.log(2*np.pi)
-            #K+=0.5*dim*np.log(self.hyper['alpha'])
-            K-=0.5*self.hyper['alpha']*np.sum(np.square(par[var]))/dim
+            K-=0.5*dim*np.log(2*np.pi)-0.5*dim*np.log(self.hyper['alpha'])
         return K
 
     def softmax(self, y_linear):

@@ -10,10 +10,10 @@ from chainer.training import extensions
 
 
 class MyModel(chainer.Chain):
-    def __init__(self, n_out):
+    def __init__(self,n_in, n_out):
         super(MyModel, self).__init__()
         with self.init_scope():
-            self.conv1=L.Convolution2D(None, 32, 3, 3, 1)
+            self.conv1=L.Convolution2D(n_in, 32, 3, 3, 1)
             self.conv2=L.Convolution2D(32, 64, 3, 3, 1)
             self.conv3=L.Convolution2D(64, 64, 3, 3, 1)
             self.conv4=L.Convolution2D(64, 512, 3, 3, 1)
@@ -63,4 +63,4 @@ def train(model_object, batchsize=64, gpu_id=0, max_epoch=100):
     return model
 
 gpu_id = 0  # Set to -1 if you don't have a GPU
-#model = train(MyModel(10), gpu_id=gpu_id)
+#model = train(MyModel(3072,10), gpu_id=gpu_id)

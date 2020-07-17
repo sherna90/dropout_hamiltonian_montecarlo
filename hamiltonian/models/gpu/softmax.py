@@ -100,8 +100,7 @@ class softmax:
                 out=yhat.argmax(axis=1)
             results.append(cp.asnumpy(out))
         results=np.asarray(results)
-        dims=results.shape
-        return results.reshape(dims[0]*dims[1],dims[2])	
+        return results.reshape(-1,)
 
 
     def predict_stochastic(self,par,X,prob=False,p=0.5,batchsize=100):
@@ -118,7 +117,8 @@ class softmax:
             else:
                 out=yhat.argmax(axis=1)
             results.append(cp.asnumpy(out))
-        return np.asarray(results)	
+        results=np.asarray(results)
+        return results.reshape(-1, results.shape[-1])	
 
 
     
