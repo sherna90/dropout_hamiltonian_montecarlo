@@ -55,11 +55,11 @@ class sgmcmc:
             for X_batch, y_batch in self.iterate_minibatches(X, y, batch_size):
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p=self.step(q,p,rng,**kwargs)
-                if (j % 100)==0:
-                    ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
+                if verbose and (j % 100)==0:
+                    ll=cp.asnumpy(self.model.negative_log_posterior(q,**kwargs))
                     print('burnin {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
-        logp_samples=cp.zeros(epochs)
+        logp_samples=np.zeros(epochs)
         posterior={var:[] for var in self.start.keys()}
         print('start sampling')
         initial_step_size=self.step_size
@@ -69,17 +69,17 @@ class sgmcmc:
                 kwargs={'X_train':X_batch,'y_train':y_batch,'verbose':verbose}
                 q,p=self.step(q,p,rng,**kwargs)
                 self.step_size=self.lr_schedule(initial_step_size,j,num_batches)
-                if (j % 100 )==0:
-                    ll=-1.0*cp.asnumpy(self.model.log_likelihood(q,**kwargs))
+                if verbose and (j % 100 )==0:
+                    ll=cp.asnumpy(self.model.negative_log_posterior(q,**kwargs))
                     print('epoch {0}, loss: {1:.4f}, mini-batch update : {2}'.format(i,ll,j))
                 j=j+1
             #initial_step_size=self.step_size
-            ll=cp.asnumpy(-1.0*self.model.log_likelihood(q,**kwargs))
+            ll=cp.asnumpy(self.model.negative_log_posterior(q,**kwargs))
             logp_samples[i]=ll
             for var in self.start.keys():
-                posterior[var].append(cp.asnumpy(q[var]))
+                posterior[var].append(q[var])
         for var in self.start.keys():
-            posterior[var]=np.array(posterior[var])
+            posterior[var]=cp.asarray(posterior[var])
         return posterior,logp_samples
 
     def lr_schedule(self,initial_step_size,step,num_batches):
